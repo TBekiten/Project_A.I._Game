@@ -1,0 +1,18 @@
+{
+    "name": "AIGame.Editor",
+    "rootNamespace": "AIGame.Editor",
+    "references": [
+        "AIGame.Game"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

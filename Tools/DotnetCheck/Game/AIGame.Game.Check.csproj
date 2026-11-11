@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Unity tarafındaki oyun kodunun derleme kontrolü. Unity'nin motor modüllerinin referans derlemelerine
+    (NuGet: UnityEngine.Modules) karşı derler. URP'ye bağlı kod (AIGAME_URP) ve Editor kodu burada derlenmez;
+    onları ancak Unity'nin kendisi doğrular. Amaç Unity'yi açmadan yazım ve API hatalarını yakalamak.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>AIGame.Game</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../../Assets/_Project/Scripts/Game/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="UnityEngine.Modules" Version="2021.3.33" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Core/AIGame.Core.csproj" />
+  </ItemGroup>
+</Project>

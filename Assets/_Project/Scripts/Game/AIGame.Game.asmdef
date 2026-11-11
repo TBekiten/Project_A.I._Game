@@ -1,0 +1,24 @@
+{
+    "name": "AIGame.Game",
+    "rootNamespace": "AIGame.Game",
+    "references": [
+        "AIGame.Core",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.render-pipelines.universal",
+            "expression": "",
+            "define": "AIGAME_URP"
+        }
+    ],
+    "noEngineReferences": false
+}
