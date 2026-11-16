@@ -25,12 +25,18 @@ Oyun iki yöne gidebilir ve iki yol **karışabilir**: oyuncu bir olayda kurtar�
 |---|---|
 | Oyuncunun temsili | Görünür bir beden yok; düşünceleri söyleyen bir balon |
 | Akış | Şehir → olay → niyet seçimi → ayrı mini oyun bölümü → şehre dönüş ve sonuç |
-| Mini oyunlar | Her sistemin kendine özgü mini oyunu var. Bilinen türlere dayanır, yeniliği yüksek olmalı |
-| PDF'deki GÖZLEM / KOD / AKIŞ / AĞ | Sabit bir zincir değil, mini oyun örnekleri (havuzun adayları) |
+| Mini oyun sayısı | 4: AKIŞ, AĞ, KOD, GÖZLEM. Hedef, çok iyi çalışan dört oyun |
+| Çeşitlilik | Yeni tür eklemek yerine bu dördün içine kural çeşitleri eklenir |
+| AĞ | Sıra tabanlı |
 | İki yol | Karışabilir |
 | Sonlar | Birkaç son var. Oyunun sonunda toplam çubuğunun hangi uca daha yakın olduğu belirler |
 | Motor | Unity 6.3 LTS, URP |
+| Asset'ler | Ücretli asset alınacak; şehir ve mini oyunlar iyi görünmeli. Repo private olduğu için dosyalar repoda durabilir |
+| Çalışma sırası | Önce mini oyunlar, sonuçlar ve dengeler; sonra asset'ler; sonra üretim. Her adım onaydan sonra |
 | Kullanıcı istekleri fikri | Çıkarıldı |
+
+**Eklenecekler (mini oyunlardan sonra):** insanların A.I. hakkındaki fikrini gösteren ayrı bir gösterge
+ve kararların şehirde kalıcı iz bırakması. **Ertelenenler:** balonun seçimlere göre değişmesi, gün sonu özeti.
 
 ## Mini oyunların ortak kuralları
 
@@ -46,18 +52,14 @@ Yenilik her mini oyuna ayrı ayrı serpiştirilmek yerine şu kurallarla sağlan
 4. **Feda ettiğin şeyin bir yüzü var.** Kaynak yetmediğinde neyi keseceğini seçersin ve arkasındaki
    insanı görürsün (solunum cihazı kullanan hasta, ambulans güzergâhı).
 
-## Mini oyun havuzu (öneri)
+## Dört mini oyun
 
-| Sistem | Dayandığı tür | Yenilik |
-|---|---|---|
-| Enerji | Boru/akış bulmacası | Sıra önemli: ara adımda hat eşiği aşılırsa sigorta atar. **Prototipte uygulandı** |
-| Ulaşım ve lojistik | Trafik yönetimi | Araçları değil, yalnızca ışıkları ve yönlendirmeyi kontrol edersin |
-| Telekom | Blok yerleştirme | Her blok gerçek bir konuşma; sığmayanı düşürürsün ve kim olduğunu görürsün |
-| Finans | Gizlilik oyunu | Harita bir muhasebe defteri, nöbetçiler denetimler |
-| Su | Ritim ve zamanlama | Basınç dalgası şehrin altında ilerler; hızlı kapatırsan uzakta boru patlar |
-| (PDF) GÖZLEM | Çıkarım | Binayı veri örüntüsünden tanımak |
-| (PDF) KOD | Kural çıkarma | Örneklerden dönüşüm kuralını bulmak |
-| (PDF) AĞ | Pac-Man benzeri kaçış | Kalabalık trafiğin içinde saklanmak |
+| Oyun | Ne yapılır | Nerede oynanır | Durum |
+|---|---|---|---|
+| AKIŞ | Şebekeyi hedef duruma getirmek; sıra önemli | Enerji olayları (ileride su, finans kuralları) | Çekirdek ve Unity prototipi yazıldı; Unity'de henüz denenmedi |
+| AĞ | Kalabalık trafiğin içinde saklanarak hedefe ve çıkışa ulaşmak | Telekom olayları ve Sentinel karşılaşmaları | Çekirdek ve ilk bölüm yazıldı; Unity tarafı yok |
+| KOD | Örneklerden dönüşüm kuralını çıkarmak | Henüz kararlaştırılmadı | Yazılmadı |
+| GÖZLEM | Binayı veri örüntüsünden tanımak | Henüz kararlaştırılmadı | Yazılmadı |
 
 ## Sayılar ve sistemler
 
@@ -125,6 +127,66 @@ Yardım etmek isteyip sırayı yanlış kuran oyuncu saldırgan gibi okunur: niy
 "?" bina tanımlanmamış: A.I. onu depo sanır, operasyondan sonra su pompası olduğu ortaya çıkar.
 Bu sayıların hepsi `EastDistrictScenarioTests` ile sınanıyor.
 
+## AĞ mini oyunu — kurallar v0.1
+
+Onaylanan kurallar:
+
+- Düğümler ve hatlardan oluşan bir ağ haritası. Oyuncu hedef düğümlere sırayla uğrar, sonra çıkışa
+  (kendi sunucusuna) ulaşır.
+- **Kurtarma ve zarar verme aynı haritada oynanır.** Kurtarmada bir veri alınıp bir yere ulaştırılır,
+  zarar vermede bir veri silinir ya da çalınır. Kaçış kuralları aynıdır.
+- **Mavi paketler** sabit döngülerde her tur bir düğüm ilerler. Paketle aynı düğümdeysen görünmezsin.
+- **Kırmızı güvenlik programları** sabit devriye döngülerinde gezer ve rotalarının önündeki 2 düğümü görür.
+- Görünürken görüş alanına girersen fark edilirsin; program devriyeyi bırakıp seni kovalar.
+- **Kopya:** bölüm başına 1 hak. Yakındaki programları üzerine çeker. Program onu birkaç tur inceler,
+  sonra kopya ele geçer ve Sentinel bu taktiği öğrenir.
+- **Şehir saati:** gece (00:00–06:00) ağ boşalır, yalnızca birkaç paket dolaşır.
+- Yakalanmak oyunu bitirmez: operasyonun kazancı kaybedilir ve Sentinel dikkati çok artar.
+
+Kodlarken netleştirdiğim ayrıntılar (değiştirilebilir):
+
+| Konu | Uygulanan kural |
+|---|---|
+| Tur sırası | Oyuncu → paketler → güvenlik programları → yakalanma ve fark edilme kontrolü |
+| Görünmezlik ne zaman ölçülür | Tüm hareketler bittikten sonra, bir kez. Paketle aynı yöne gidersen saklı kalırsın; kavşakta bir paketten diğerine geçebilirsin |
+| Saklıyken program üstünden geçerse | Devriye programı seni trafikten ayıramaz; yalnızca peşindeki program yakalar |
+| Aynı hattan karşılıklı geçmek | Yakalanma sayılır |
+| "Önündeki 2 düğüm" | Devriye rotasının sonraki iki düğümü |
+| Kovalama | Program en kısa yoldan son gördüğü yere gider. Oraya vardığında oyuncu görünmüyorsa iz kaybolur ve devriyesine döner |
+| Kopya | Bırakmak tur harcamaz. 4 hat uzaklığa kadar programları çeker; 3 tur incelenir |
+| Hedefe uğramak | Düğüme girince kendiliğinden tamamlanır |
+| Rastgelelik | Yok. Aynı hamleler her zaman aynı sonucu verir |
+
+Sonuç sayıları:
+
+```
+okuma:  hiç fark edilmedin → doğal · fark edilip kaçtın → açıklanamayan · yakalandın → saldırı
+dikkat: 2 (taban) + 4 × fark edilme + (açıklanamayan 5 | yakalanma 22) + (kopya ele geçtiyse 3)
+```
+
+### İlk bölüm: telekom santrali
+
+```
+              n1 ── n2 ── n3          n2: santral çekirdeği
+              │            │
+S ── a ── b ── c ── d ── e ── X       S: giriş · X: kendi sunucun
+              │            │
+              m1 ── m2 ── m3          m2: arşiv
+```
+
+Çözücünün bulduğu en kısa yollar (testlerle sınanıyor):
+
+| Durum | Kurtarma | Zarar verme |
+|---|---|---|
+| 19:00, gizli, kopyasız | 19 tur | 13 tur |
+| 19:00, gizli, kopyayla | 12 tur | 8 tur |
+| 03:00, gizli, kopyasız | mümkün değil | mümkün değil |
+| 03:00, gizli, kopyayla | 12 tur | 8 tur |
+| 03:00, fark edilmeyi göze alarak | 16 tur | 16 tur |
+
+Gizli rota trafiksiz mümkün değil; yani bölüm gerçekten paketlerin içinde saklanmayı gerektiriyor.
+Olayın metinleri yer tutucu.
+
 ## Prototipin cevaplaması gereken sorular
 
 1. Enerji mini oyununu oynamak keyifli mi?
@@ -134,8 +196,12 @@ Bu sayıların hepsi `EastDistrictScenarioTests` ile sınanıyor.
 
 ## Açık konular
 
+- KOD ve GÖZLEM hangi olaylarda oynanacak? İkisi de belirli bir şehir sistemine bağlı değil.
+- Kopya şu an fazla güçlü olabilir: bölümün başında bırakmak iki programı da çekiyor. Oynayınca bakılacak.
 - Sonların sayısı ve çubuktaki eşikleri.
-- Tutorial'ın içeriği (A.I.'ın kaçışı?).
-- Hangi sistemlerin ilk sürüme gireceği ve mini oyun havuzundan hangilerinin seçileceği.
+- Tutorial'ın içeriği.
+- PDF'den geri gelecekler: risk seviyesi seçimi, aynı anda çıkan olaylar, Sentinel karşılaşmaları,
+  diğer kaçak A.I.'lar, temsilci karakterler.
+- Şehir için temel asset paketi (aday: Synty POLYGON City; pencerelerin ayrı malzeme olduğu doğrulanacak).
 - A.I.'ın kişiliği ve seslendirmesi; balonun görsel tasarımı.
 - Oyunun adı ("A.I." Steam'de aranamaz).

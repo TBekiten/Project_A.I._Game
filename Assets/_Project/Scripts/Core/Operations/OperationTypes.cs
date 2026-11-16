@@ -64,5 +64,8 @@ namespace AIGame.Core.Operations
 
         /// <summary>Operasyon sonunda tanınan (kimliği ortaya çıkan) düğümler.</summary>
         public List<string> RevealedNodeIds { get; } = new List<string>();
+
+        /// <summary>Sentinel oyuncunun bir taktiğini (ör. kopya yemi) inceleyip öğrendi.</summary>
+        public bool SentinelLearnedDecoy { get; set; }
     }
 }
