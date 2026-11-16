@@ -174,7 +174,7 @@ S ── a ── b ── c ── d ── e ── X       S: giriş · X: ke
               m1 ── m2 ── m3          m2: arşiv
 ```
 
-Çözücünün bulduğu en kısa yollar (testlerle sınanıyor):
+Çözücünün bulduğu en kısa yollar (sayılar ve "mümkün değil" sonuçları testlerle sınanıyor):
 
 | Durum | Kurtarma | Zarar verme |
 |---|---|---|

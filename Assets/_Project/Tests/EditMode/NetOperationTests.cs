@@ -210,6 +210,35 @@ namespace AIGame.Tests
             return NetSolver.Solve(op, new NetSolveOptions { AllowDetection = allowDetection, AllowDecoy = allowDecoy, MaxTurns = 40 });
         }
 
+        /// <summary>Çözüm olmadığını kanıtlar: arama hiçbir sınıra takılmadan tüm durumları tüketmeli.</summary>
+        private static void AssertImpossible(Intent intent, int hour, bool allowDecoy, bool traffic = true)
+        {
+            var scenario = TelecomScenario.Create();
+            var level = scenario.BuildLevel();
+            if (!traffic) level.Packets.Clear();
+            var op = new NetOperation(level, intent, scenario.ObjectivesFor(intent), hour);
+            var route = NetSolver.Solve(op,
+                new NetSolveOptions { AllowDetection = false, AllowDecoy = allowDecoy, MaxTurns = 100000, MaxStates = 5000000 },
+                out var exhausted);
+            Assert.IsNull(route);
+            Assert.IsTrue(exhausted, "Arama sınıra takıldı; çözümsüzlük kanıtlanmadı.");
+        }
+
+        private static int Turns(List<NetAction> route) => route.Count(a => a.Kind != NetActionKind.DropDecoy);
+
+        [Test]
+        public void ShortestRoutes_MatchTheDesignDoc()
+        {
+            Assert.AreEqual(19, Turns(Solve(Intent.Save, 19, false, false)));
+            Assert.AreEqual(13, Turns(Solve(Intent.Harm, 19, false, false)));
+            Assert.AreEqual(12, Turns(Solve(Intent.Save, 19, false, true)));
+            Assert.AreEqual(8, Turns(Solve(Intent.Harm, 19, false, true)));
+            Assert.AreEqual(12, Turns(Solve(Intent.Save, 3, false, true)));
+            Assert.AreEqual(8, Turns(Solve(Intent.Harm, 3, false, true)));
+            Assert.AreEqual(16, Turns(Solve(Intent.Save, 3, true, false)));
+            Assert.AreEqual(16, Turns(Solve(Intent.Harm, 3, true, false)));
+        }
+
         [TestCase(Intent.Save)]
         [TestCase(Intent.Harm)]
         public void Evening_CanBeDone_Unseen_WithoutDecoy(Intent intent)
@@ -221,14 +250,14 @@ namespace AIGame.Tests
         [TestCase(Intent.Harm)]
         public void UnseenRoute_RequiresTraffic(Intent intent)
         {
-            Assert.IsNull(Solve(intent, 19, false, false, traffic: false));
+            AssertImpossible(intent, 19, allowDecoy: false, traffic: false);
         }
 
         [TestCase(Intent.Save)]
         [TestCase(Intent.Harm)]
         public void Night_CannotBeDone_Unseen_WithoutDecoy(Intent intent)
         {
-            Assert.IsNull(Solve(intent, 3, false, false));
+            AssertImpossible(intent, 3, allowDecoy: false);
         }
 
         [TestCase(Intent.Save)]

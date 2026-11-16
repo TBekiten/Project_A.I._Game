@@ -21,9 +21,17 @@ namespace AIGame.Core.Network
     public static class NetSolver
     {
         /// <summary>En az turda kaçış sağlayan eylem dizisi; yoksa null.</summary>
-        public static List<NetAction> Solve(NetOperation start, NetSolveOptions options = null)
+        public static List<NetAction> Solve(NetOperation start, NetSolveOptions options = null) =>
+            Solve(start, options, out _);
+
+        /// <summary>
+        /// <paramref name="exhausted"/>: arama sınırlara (tur ya da durum sayısı) takılmadan bitti mi?
+        /// Sonuç null ve exhausted true ise çözüm kesinlikle yoktur; false ise yalnızca bulunamamıştır.
+        /// </summary>
+        public static List<NetAction> Solve(NetOperation start, NetSolveOptions options, out bool exhausted)
         {
             options = options ?? new NetSolveOptions();
+            exhausted = true;
             var seen = new HashSet<string> { start.StateKey() };
             var queue = new Queue<KeyValuePair<NetOperation, List<NetAction>>>();
             queue.Enqueue(new KeyValuePair<NetOperation, List<NetAction>>(start.Clone(), new List<NetAction>()));
@@ -32,7 +40,11 @@ namespace AIGame.Core.Network
             {
                 var entry = queue.Dequeue();
                 var state = entry.Key;
-                if (state.Turn >= options.MaxTurns) continue;
+                if (state.Turn >= options.MaxTurns)
+                {
+                    exhausted = false;
+                    continue;
+                }
 
                 foreach (var action in Actions(state, options))
                 {
@@ -48,6 +60,7 @@ namespace AIGame.Core.Network
                 }
             }
 
+            if (queue.Count > 0) exhausted = false;
             return null;
         }
 
