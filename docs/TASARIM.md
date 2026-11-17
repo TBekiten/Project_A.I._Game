@@ -41,12 +41,17 @@ ve kararların şehirde kalıcı iz bırakması. **Ertelenenler:** balonun seçi
 
 ## Görsel yönerge
 
-- **Blender scripti yok.** Görselleri script ya da yapay zekâ ile üretmiyoruz.
-- **Yapay zekâ üretimi asgari.** Görsellerin büyük kısmı hazır (ücretli ya da ücretsiz) paketlerden
-  bulunup toplanacak. Gerekirse üzerinde değişikliği oyunun sahibi kendisi yapar.
+- **Önce hazır paket.** Görsellerin büyük kısmı hazır (ücretli ya da ücretsiz) paketlerden bulunup toplanacak.
 - **Uyum şart.** Toplanan görseller aynı stilde olmalı: tek bir temel paket ailesi seçilir, eksikler
   önce aynı yayıncının diğer paketlerinden, sonra aynı stile uyan paketlerden tamamlanır.
-- Bir ihtiyaç hiçbir pakette bulunamazsa üretmeden önce oyunun sahibine sorulur.
+- **Bulunamayan özel parçalar için Blender scripti.** Hiçbir pakette olmayan bir şey çıkarsa Blender
+  scriptiyle üretilebilir, üzerini oyunun sahibi düzenler. Bu onun iş yükünü artırdığı için son çare;
+  her parça için önce sorulur.
+- **Yapay zekâ ile görsel üretimi (görüntü üretici modeller) asgari.**
+- **A.I. temasına uygun shader'lar istenir.** Kodla yazılır; renk, hız gibi değerler malzeme ayarlarından
+  değiştirilebilir olur. Aday yerler: tanımlanmamış binalar (tarama görünümü), şehirdeki sistem katmanı
+  (hatlarda akan veri), mini oyun ekranları, A.I. balonu, mini oyuna giriş-çıkış geçişleri.
+  Hangilerinin yapılacağı asset aşamasında kararlaştırılacak.
 - Koddaki şekillerden kurulmuş şehir yalnızca yer tutucudur; seçilen paketle değiştirilecek.
 - Mini oyun ekranlarındaki çizgi ve düğümler kodla çiziliyor; ikon ve arayüz parçaları şehir paketiyle
   uyumlu hazır paketlerden seçilecek.
