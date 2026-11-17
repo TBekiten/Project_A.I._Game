@@ -33,10 +33,23 @@ Oyun iki yöne gidebilir ve iki yol **karışabilir**: oyuncu bir olayda kurtar�
 | Motor | Unity 6.3 LTS, URP |
 | Asset'ler | Ücretli asset alınacak; şehir ve mini oyunlar iyi görünmeli. Repo private olduğu için dosyalar repoda durabilir |
 | Çalışma sırası | Önce mini oyunlar, sonuçlar ve dengeler; sonra asset'ler; sonra üretim. Her adım onaydan sonra |
+| Görsel üretim | Asgari düzeyde tutulacak; ayrıntısı aşağıda "Görsel yönerge" başlığında |
 | Kullanıcı istekleri fikri | Çıkarıldı |
 
 **Eklenecekler (mini oyunlardan sonra):** insanların A.I. hakkındaki fikrini gösteren ayrı bir gösterge
 ve kararların şehirde kalıcı iz bırakması. **Ertelenenler:** balonun seçimlere göre değişmesi, gün sonu özeti.
+
+## Görsel yönerge
+
+- **Blender scripti yok.** Görselleri script ya da yapay zekâ ile üretmiyoruz.
+- **Yapay zekâ üretimi asgari.** Görsellerin büyük kısmı hazır (ücretli ya da ücretsiz) paketlerden
+  bulunup toplanacak. Gerekirse üzerinde değişikliği oyunun sahibi kendisi yapar.
+- **Uyum şart.** Toplanan görseller aynı stilde olmalı: tek bir temel paket ailesi seçilir, eksikler
+  önce aynı yayıncının diğer paketlerinden, sonra aynı stile uyan paketlerden tamamlanır.
+- Bir ihtiyaç hiçbir pakette bulunamazsa üretmeden önce oyunun sahibine sorulur.
+- Koddaki şekillerden kurulmuş şehir yalnızca yer tutucudur; seçilen paketle değiştirilecek.
+- Mini oyun ekranlarındaki çizgi ve düğümler kodla çiziliyor; ikon ve arayüz parçaları şehir paketiyle
+  uyumlu hazır paketlerden seçilecek.
 
 ## Mini oyunların ortak kuralları
 
