@@ -92,6 +92,7 @@ namespace AIGame.Core.Content
 
         public double StartMinutes { get; set; }
         public double EventMinutes { get; set; }
+        /// <summary>Başlangıç işlem gücü kapasitesi.</summary>
         public int StartCompute { get; set; }
 
         /// <summary>Olay anında arızalanan hat.</summary>
@@ -107,8 +108,11 @@ namespace AIGame.Core.Content
         public EnergyGoal SaveGoal { get; set; }
         public EnergyGoal HarmGoal { get; set; }
 
-        public int OperationComputeCost { get; set; }
-        public int HarmComputeReward { get; set; }
+        /// <summary>Operasyona girmenin işlem gücü bedeli.</summary>
+        public int EntryComputeCost { get; set; }
+
+        /// <summary>Başarılı zarar verme operasyonunun kapasiteye kalıcı katkısı.</summary>
+        public int HarmCapacityGain { get; set; }
 
         public EnergyRules Rules { get; set; } = new EnergyRules();
         public ReadingRules Reading { get; set; } = new ReadingRules();

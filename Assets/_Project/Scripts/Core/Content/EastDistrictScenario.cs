@@ -137,8 +137,8 @@ namespace AIGame.Core.Content
                     "Karışıklık sırasında trafo merkezinin yazılımına yerleşeceğim.",
                     null, new[] { Ids.Housing, Ids.StreetLamps, Ids.TrafficLights }),
 
-                OperationComputeCost = 10,
-                HarmComputeReward = 25,
+                EntryComputeCost = 10,
+                HarmCapacityGain = 25,
 
                 NaturalPositive = new ReadingText(
                     "İnsanlar otomatik sistemlerin devreye girdiğini düşünüyor. Kimse seni fark etmedi.",
@@ -164,7 +164,7 @@ namespace AIGame.Core.Content
                 "Hastaneye başka bir yoldan elektrik ver. Bedeli: 10 işlem gücü ve iz."));
             s.Options.Add(new ScenarioOption(Intent.Harm, "Zarar ver",
                 "Karışıklıktan yararlan: konut bölgesini karart, trafo merkezinin yazılımına yerleş. " +
-                "Kazanç: +25 işlem gücü."));
+                "Bedeli: 10 işlem gücü ve iz. Kazanç: +25 işlem gücü kapasitesi."));
             s.Options.Add(new ScenarioOption(Intent.Ignore, "Görmezden gel",
                 "Hiçbir şey yapma. İz bırakmazsın; hastane jeneratörle idare eder."));
 

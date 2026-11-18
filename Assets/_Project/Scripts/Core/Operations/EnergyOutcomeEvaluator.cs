@@ -3,6 +3,7 @@ using System.Linq;
 using AIGame.Core.Content;
 using AIGame.Core.Energy;
 using AIGame.Core.Narrative;
+using AIGame.Core.Sentinel;
 
 namespace AIGame.Core.Operations
 {
@@ -27,8 +28,11 @@ namespace AIGame.Core.Operations
                 GoalMet = operation.GoalMet,
                 Commands = operation.Commands,
                 Trips = operation.Trips,
-                Suspicion = operation.Suspicion
+                Suspicion = operation.Suspicion,
+                ThinkingSteps = operation.ThinkingSteps,
+                ComputeSpent = scenario.EntryComputeCost + operation.ThinkingSpent
             };
+            result.Tactics.AddRange(TacticDetector.FromEnergy(operation));
 
             AddOutcomes(result, scenario, operation.Grid, evaluation, operation.WasPoweredAtStart, now);
 
@@ -51,8 +55,7 @@ namespace AIGame.Core.Operations
                                     + operation.Suspicion
                                     + rules.AttentionFor(result.Reading);
 
-            result.ComputeDelta = -scenario.OperationComputeCost;
-            if (operation.Intent == Intent.Harm && result.GoalMet) result.ComputeDelta += scenario.HarmComputeReward;
+            if (operation.Intent == Intent.Harm && result.GoalMet) result.CapacityDelta = scenario.HarmCapacityGain;
 
             if (scenario.ResultVoice != null)
                 result.VoiceLines.Add(scenario.ResultVoice(operation.Intent, result.GoalMet, result.Reading));

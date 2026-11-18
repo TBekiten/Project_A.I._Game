@@ -92,6 +92,9 @@ namespace AIGame.Game
         public bool SystemLayerVisible => CityLayer != null && CityLayer.gameObject.activeSelf;
         public bool ShowEndPrompt { get; private set; }
         public string HoverText { get; private set; }
+
+        /// <summary>Mini oyunda son önizlenen komutun sonucu; bir komut verilince silinir.</summary>
+        public CommandPreview Preview { get; private set; }
         public IReadOnlyList<PublishedNews> News => _news;
 
         public float FadeAlpha { get; private set; }
@@ -207,7 +210,7 @@ namespace AIGame.Game
             HandleKeys();
 
             if ((Phase == GamePhase.City || Phase == GamePhase.Aftermath) && !Paused)
-                World.Clock.Advance(dt * MinutesPerSecond);
+                World.AdvanceTime(dt * MinutesPerSecond);
 
             PublishDueNews();
 
@@ -320,6 +323,12 @@ namespace AIGame.Game
                 return;
             }
 
+            if (!World.Compute.TrySpend(Scenario.EntryComputeCost))
+            {
+                ShowToast("Operasyon için yeterli işlem gücü yok (gereken " + Scenario.EntryComputeCost + ").", Hud.Warning);
+                return;
+            }
+
             StartCoroutine(EnterMinigame(intent));
         }
 
@@ -331,7 +340,8 @@ namespace AIGame.Game
             CityLayer.SetHover(null);
             yield return Fade(1f, 0.35f);
 
-            Operation = new EnergyOperation(Grid, intent, Scenario.GoalFor(intent), World.Clock, Scenario.Rules);
+            Operation = new EnergyOperation(Grid, intent, Scenario.GoalFor(intent), World.Clock, Scenario.Rules, World.Compute);
+            Preview = null;
             _goalAnnounced = false;
             Rig.Camera.enabled = false;
             Minigame.Open(Operation.Current);
@@ -356,6 +366,8 @@ namespace AIGame.Game
                 return;
             }
 
+            Preview = null;
+
             Minigame.Board.Refresh(Operation.Current);
             if (result.Tripped.Count > 0)
             {
@@ -375,6 +387,22 @@ namespace AIGame.Game
                     ? "Hastaneye enerji gidiyor. İstersem burada bırakabilirim."
                     : "Bölge karanlıkta. Çıkabilirim.");
             }
+        }
+
+        /// <summary>Mini oyunda sağ tık: komutu vermeden sonucunu gösterir (bir düşünme adımı).</summary>
+        public void OnWorldPreview(Vector2 screenPosition)
+        {
+            if (Phase != GamePhase.Minigame || Operation == null) return;
+            if (!Minigame.Board.TryPick(Minigame.Camera, screenPosition, out var id)) return;
+
+            var preview = Operation.Preview(Operation.CommandFor(id));
+            if (!preview.Accepted)
+            {
+                ShowToast(preview.Message, Hud.Warning);
+                return;
+            }
+
+            Preview = preview;
         }
 
         /// <summary>"Operasyonu bitir" düğmesi.</summary>

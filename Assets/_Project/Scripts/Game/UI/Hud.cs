@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AIGame.Core.Energy;
 using AIGame.Core.Operations;
+using AIGame.Core.Sentinel;
 using AIGame.Game.Systems;
 using AIGame.Game.Util;
 using UnityEngine;
@@ -59,6 +60,7 @@ namespace AIGame.Game.UI
             DrawBoardLabels();
 
             DrawTopBar();
+            if (Game.Phase == GamePhase.City || Game.Phase == GamePhase.Aftermath) DrawSignature();
             DrawNews();
             DrawControls();
 
@@ -85,10 +87,18 @@ namespace AIGame.Game.UI
             var mouse = e.mousePosition;
             PointerOverUi = _uiRects.Any(r => r.Contains(mouse));
 
-            if (e.type == EventType.MouseDown && e.button == 0 && !PointerOverUi && Game.FadeAlpha < 0.5f)
+            if (e.type == EventType.MouseDown && !PointerOverUi && Game.FadeAlpha < 0.5f)
             {
-                Game.OnWorldClick(GuiInput.MouseScreen);
-                e.Use();
+                if (e.button == 0)
+                {
+                    Game.OnWorldClick(GuiInput.MouseScreen);
+                    e.Use();
+                }
+                else if (e.button == 1)
+                {
+                    Game.OnWorldPreview(GuiInput.MouseScreen);
+                    e.Use();
+                }
             }
         }
 
@@ -131,7 +141,7 @@ namespace AIGame.Game.UI
             GUI.Label(new Rect(right - 240f, 22f, 40f, 30f), Tint(world.Attention.ToString(), Text), _body);
 
             GUI.Label(new Rect(right - 180f, 8f, 180f, 24f), Tint("İŞLEM GÜCÜ", Muted), RightAligned(_tiny));
-            GUI.Label(new Rect(right - 180f, 24f, 180f, 36f), Tint(world.Compute.ToString(), Accent), RightAligned(_clock));
+            GUI.Label(new Rect(right - 180f, 24f, 180f, 36f), Tint(world.Compute.AvailableWhole + " / " + world.Compute.Capacity, Accent), RightAligned(_clock));
         }
 
         private void DrawNews()
@@ -168,7 +178,8 @@ namespace AIGame.Game.UI
             switch (Game.Phase)
             {
                 case GamePhase.Minigame:
-                    text = "[Sol tık] Anahtar: hattı aç / kapat   ·   Yük: devreden çıkar / geri ver";
+                    text = "[Sol tık] Anahtar: hattı aç / kapat · Yük: devreden çıkar / geri ver   ·   [Sağ tık] Önizle (" +
+                           Game.World.Compute.ThinkCost + " işlem gücü)";
                     break;
                 case GamePhase.Aftermath when Game.ShowEndPrompt:
                     text = "[R] Baştan başla   ·   [Tab] Sistem katmanı   ·   [WASD] Kaydır   ·   [Tekerlek] Yakınlaş";
@@ -241,18 +252,23 @@ namespace AIGame.Game.UI
             Stat(new Rect(x + 100f, y, 90f, 56f), "SİGORTA", op.Trips.ToString(), op.Trips > 0 ? Danger : Text);
             Stat(new Rect(x + 200f, y, 90f, 56f), "İZ", op.Suspicion.ToString(), op.Suspicion > 2 ? Warning : Text);
             Stat(new Rect(x + 300f, y, 90f, 56f), "SAAT", op.Clock.Format(), Text);
-            y += 66f;
+            y += 62f;
+            var compute = Game.World.Compute;
+            GUI.Label(new Rect(x, y, w, 22f), Tint("İşlem gücü " + compute.AvailableWhole + " / " + compute.Capacity +
+                                                   "   ·   önizleme " + compute.ThinkCost, compute.CanThink ? Accent : Muted), _tiny);
+            y += 26f;
 
-            GUI.Label(new Rect(x, y, w, 20f), Tint("RENKLER", Muted), _tiny);
-            y += 22f;
-            Legend(ref y, x, GridBoard.Calm, "Hat rahat");
-            Legend(ref y, x, GridBoard.Busy, "Hat yoğun (%65+)");
-            Legend(ref y, x, GridBoard.Critical, "Hat sınırda (%90+)");
-            Legend(ref y, x, GridBoard.OpenColor, "Açık hat (enerji geçmez)");
-            Legend(ref y, x, GridBoard.Danger, "Sigorta attı / arızalı");
-            Legend(ref y, x, GridBoard.PoweredLoad, "Yük enerjili");
-            Legend(ref y, x, GridBoard.ShedLoad, "Yük atıldı");
+            if (Game.Preview != null)
+            {
+                DrawPreview(Game.Preview, x, ref y, w);
+            }
+            else
+            {
+                DrawLegend(x, ref y, w);
+            }
             y += 8f;
+
+            GUI.Label(new Rect(x, y, w, 20f), Tint("KAYIT", Muted), _tiny);
 
             GUI.Label(new Rect(x, y, w, 20f), Tint("KAYIT", Muted), _tiny);
             y += 20f;
@@ -268,6 +284,84 @@ namespace AIGame.Game.UI
             var button = new Rect(x, rect.yMax - 62f, w, 46f);
             var label = op.GoalMet ? "OPERASYONU BİTİR · ŞEHRE DÖN" : "BİTİR (hedef tamamlanmadı) · ŞEHRE DÖN";
             if (GUI.Button(button, label, _button)) Game.FinishOperation();
+        }
+
+        private void DrawLegend(float x, ref float y, float w)
+        {
+            GUI.Label(new Rect(x, y, w, 20f), Tint("RENKLER", Muted), _tiny);
+            y += 22f;
+            Legend(ref y, x, GridBoard.Calm, "Hat rahat");
+            Legend(ref y, x, GridBoard.Busy, "Hat yoğun (%65+)");
+            Legend(ref y, x, GridBoard.Critical, "Hat sınırda (%90+)");
+            Legend(ref y, x, GridBoard.OpenColor, "Açık hat (enerji geçmez)");
+            Legend(ref y, x, GridBoard.Danger, "Sigorta attı / arızalı");
+            Legend(ref y, x, GridBoard.PoweredLoad, "Yük enerjili");
+            Legend(ref y, x, GridBoard.ShedLoad, "Yük atıldı");
+        }
+
+        /// <summary>Önizlenen komutun sonucu: hatlardaki akış, sigorta, yükler, iz.</summary>
+        private void DrawPreview(CommandPreview preview, float x, ref float y, float w)
+        {
+            GUI.Label(new Rect(x, y, w, 20f), Tint("ÖNİZLEME · " + CommandText(preview.Command), Accent), _tiny);
+            y += 22f;
+
+            // Yüklerin kendi besleme hatları "karanlıkta kalacak" listesinde zaten görünüyor; yalnızca
+            // kumandalı hatları ve sigortası atacak olanları göster.
+            foreach (var line in preview.Lines.Where(l => l.Trips || Game.Grid.Line(l.LineId).Switchable))
+            {
+                var text = line.Name + ":  " + line.FlowBefore + " → " + line.FlowAfter + " / " + line.Capacity +
+                           (line.Trips ? "   SİGORTA ATAR" : "");
+                var color = line.Trips ? Danger : line.FlowAfter > line.Capacity * 0.9f ? Warning : Text;
+                GUI.Label(new Rect(x, y, w, 20f), Tint(text, color), _tiny);
+                y += 19f;
+            }
+
+            var dark = preview.Loads.Where(l => !l.PoweredAfter).Select(l => l.Name).ToList();
+            var lit = preview.Loads.Where(l => l.PoweredAfter).Select(l => l.Name).ToList();
+            if (dark.Count > 0) y += Wrapped(x, y, w, Tint("Karanlıkta kalacak: " + string.Join(", ", dark), Danger));
+            if (lit.Count > 0) y += Wrapped(x, y, w, Tint("Enerji gelecek: " + string.Join(", ", lit), Good));
+
+            GUI.Label(new Rect(x, y, w, 20f), Tint("İz +" + preview.Suspicion + "   ·   hedef " +
+                                                   (preview.GoalMetAfter ? "tamamlanır" : "tamamlanmaz"), Muted), _tiny);
+            y += 22f;
+        }
+
+        private float Wrapped(float x, float y, float w, string text)
+        {
+            var h = _tiny.CalcHeight(new GUIContent(text), w);
+            GUI.Label(new Rect(x, y, w, h), text, _tiny);
+            return h + 2f;
+        }
+
+        private string CommandText(GridCommand command)
+        {
+            var grid = Game.Grid;
+            switch (command.Kind)
+            {
+                case GridCommandKind.OpenLine: return grid.Line(command.TargetId).Name + " açılırsa";
+                case GridCommandKind.CloseLine: return grid.Line(command.TargetId).Name + " kapatılırsa";
+                case GridCommandKind.ShedLoad: return grid.Node(command.TargetId).DisplayName + " atılırsa";
+                default: return grid.Node(command.TargetId).DisplayName + " geri verilirse";
+            }
+        }
+
+        /// <summary>Sentinel'in tanıdığı taktikler (şehir ekranında, sol üstte).</summary>
+        private void DrawSignature()
+        {
+            var known = Game.World.Sentinel.Known;
+            if (known.Count == 0) return;
+            const float width = 300f;
+            var rect = new Rect(24f, 84f, width, 40f + known.Count * 22f);
+            Panel(rect, Danger);
+            GUI.Label(new Rect(rect.x + 16f, rect.y + 10f, width - 32f, 20f), Tint("SENTINEL'İN TANIDIKLARI", Muted), _tiny);
+            var y = rect.y + 32f;
+            foreach (var pair in known)
+            {
+                GUI.Label(new Rect(rect.x + 16f, y, width - 80f, 20f), TacticNames.Of(pair.Key), _tiny);
+                GUI.Label(new Rect(rect.xMax - 66f, y, 50f, 20f),
+                    Tint("+" + Game.World.Sentinel.Rules.AttentionPerLevel * pair.Value, Danger), RightAligned(_tiny));
+                y += 22f;
+            }
         }
 
         private void DrawCityStatusPanel()
@@ -323,7 +417,7 @@ namespace AIGame.Game.UI
                                                     + "   " + o.Text).ToList();
             var linesHeight = lines.Sum(l => _body.CalcHeight(new GUIContent(l), w) + 4f);
             var summaryHeight = _body.CalcHeight(new GUIContent(result.ReadingSummary), w);
-            var height = 22f + 40f + 30f + 30f + linesHeight + 26f + 30f + summaryHeight + 30f + 60f + 30f + 70f;
+            var height = 22f + 40f + 30f + 30f + linesHeight + 26f + 30f + summaryHeight + 30f + 60f + 30f + 24f + 70f;
             var rect = new Rect(x0, Mathf.Max(84f, (_height - height) / 2f - 40f), width, height);
             Panel(rect, ReadingColor(result.Reading));
 
@@ -354,10 +448,21 @@ namespace AIGame.Game.UI
 
             Stat(new Rect(x, y, 200f, 56f), "TOPLAM ÇUBUĞU", Signed(result.AlignmentDelta), result.AlignmentDelta >= 0 ? Accent : Danger);
             Stat(new Rect(x + 220f, y, 200f, 56f), "SENTINEL DİKKATİ", Signed(result.AttentionDelta), result.AttentionDelta > 0 ? Warning : Text);
-            Stat(new Rect(x + 440f, y, 200f, 56f), "İŞLEM GÜCÜ", Signed(result.ComputeDelta), result.ComputeDelta >= 0 ? Good : Text);
+            var computeText = (result.ComputeSpent > 0 ? "-" + result.ComputeSpent : "0") +
+                              (result.CapacityDelta > 0 ? "  kapasite +" + result.CapacityDelta : "");
+            Stat(new Rect(x + 440f, y, 300f, 56f), "İŞLEM GÜCÜ", computeText, result.CapacityDelta > 0 ? Good : Text);
             y += 64f;
             if (result.Intent != Intent.Ignore)
-                GUI.Label(new Rect(x, y, w, 24f), Tint("Komut " + result.Commands + "   ·   Sigorta " + result.Trips + "   ·   İz " + result.Suspicion, Muted), _tiny);
+            {
+                GUI.Label(new Rect(x, y, w, 24f), Tint("Komut " + result.Commands + "   ·   Sigorta " + result.Trips + "   ·   İz " +
+                                                       result.Suspicion + "   ·   Düşünme adımı " + result.ThinkingSteps, Muted), _tiny);
+                y += 24f;
+                var tactics = string.Join(", ", result.Tactics.Select(TacticNames.Of));
+                var signature = result.SignatureAttention > 0
+                    ? "Sentinel bu taktikleri tanıyor: +" + result.SignatureAttention + " dikkat (" + tactics + ")"
+                    : "Sentinel'in gördüğü taktikler: " + tactics;
+                GUI.Label(new Rect(x, y, w, 24f), Tint(signature, result.SignatureAttention > 0 ? Danger : Muted), _tiny);
+            }
 
             var button = new Rect(rect.xMax - 230f, rect.yMax - 66f, 200f, 46f);
             if (GUI.Button(button, "DEVAM", _button)) Game.ContinueAfterResult();

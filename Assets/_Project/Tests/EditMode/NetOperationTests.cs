@@ -290,7 +290,8 @@ namespace AIGame.Tests
 
             Assert.IsTrue(result.GoalMet);
             Assert.AreEqual(PublicReading.Natural, result.Reading);
-            Assert.IsTrue(result.SentinelLearnedDecoy);
+            Assert.IsTrue(result.DecoyCaptured);
+            Assert.Contains(AIGame.Core.Sentinel.Tactic.Decoy, result.Tactics);
             Assert.AreEqual(scenario.BaseAttention + scenario.DecoyCapturedAttention, result.AttentionDelta);
         }
 
@@ -304,7 +305,8 @@ namespace AIGame.Tests
             var unseenResult = NetOutcomeEvaluator.Evaluate(unseen, scenario);
             Assert.AreEqual(PublicReading.Natural, unseenResult.Reading);
             Assert.AreEqual(scenario.HarmAlignment, unseenResult.AlignmentDelta);
-            Assert.AreEqual(-scenario.OperationComputeCost + scenario.HarmComputeReward, unseenResult.ComputeDelta);
+            Assert.AreEqual(scenario.HarmCapacityGain, unseenResult.CapacityDelta);
+            Assert.AreEqual(scenario.EntryComputeCost, unseenResult.ComputeSpent);
 
             var seen = new NetOperation(scenario.BuildLevel(), Intent.Save, scenario.SaveObjectives, 3);
             foreach (var action in Solve(Intent.Save, 3, true, false)) seen.Execute(action);

@@ -299,7 +299,8 @@ namespace AIGame.Core.Energy
                 }
             }
 
-            return new GridEvaluation(this, energized, flows, lineDepth, subtree);
+            var feeders = parentLine.ToDictionary(p => p.Key, p => p.Value.Id);
+            return new GridEvaluation(this, energized, flows, lineDepth, subtree, feeders);
         }
 
         /// <summary>
@@ -349,10 +350,12 @@ namespace AIGame.Core.Energy
         private readonly Dictionary<string, int> _flows;
         private readonly Dictionary<string, int> _lineDepth;
         private readonly Dictionary<string, int> _subtreeLoad;
+        private readonly Dictionary<string, string> _feeders;
 
         internal GridEvaluation(PowerGrid grid, HashSet<string> energized, Dictionary<string, int> flows,
-            Dictionary<string, int> lineDepth, Dictionary<string, int> subtreeLoad)
+            Dictionary<string, int> lineDepth, Dictionary<string, int> subtreeLoad, Dictionary<string, string> feeders)
         {
+            _feeders = feeders;
             _grid = grid;
             _energized = energized;
             _flows = flows;
@@ -370,6 +373,9 @@ namespace AIGame.Core.Energy
         }
 
         public int FlowOf(string lineId) => _flows.TryGetValue(lineId, out var flow) ? flow : 0;
+
+        /// <summary>Düğümü şu an besleyen hat; enerjisizse ya da kaynaksa null.</summary>
+        public string FeederOf(string nodeId) => _feeders.TryGetValue(nodeId, out var line) ? line : null;
 
         public int DepthOf(string lineId) => _lineDepth.TryGetValue(lineId, out var d) ? d : 0;
 

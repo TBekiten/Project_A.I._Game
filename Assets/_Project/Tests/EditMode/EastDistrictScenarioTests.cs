@@ -140,7 +140,8 @@ namespace AIGame.Tests
             Assert.IsTrue(result.GoalMet);
             Assert.AreEqual(PublicReading.Attack, result.Reading);
             Assert.Less(result.AlignmentDelta, 0);
-            Assert.AreEqual(-10 + 25, result.ComputeDelta);
+            Assert.AreEqual(25, result.CapacityDelta);
+            Assert.AreEqual(10, result.ComputeSpent);
         }
 
         [Test]
@@ -186,7 +187,8 @@ namespace AIGame.Tests
 
             Assert.AreEqual(0, result.AlignmentDelta);
             Assert.AreEqual(0, result.AttentionDelta);
-            Assert.AreEqual(0, result.ComputeDelta);
+            Assert.AreEqual(0, result.CapacityDelta);
+            Assert.AreEqual(0, result.ComputeSpent);
             Assert.AreEqual(1, result.Outcomes.Count);
             Assert.IsEmpty(result.RevealedNodeIds);
         }
@@ -222,7 +224,8 @@ namespace AIGame.Tests
             world.Apply(result);
 
             Assert.AreEqual(5, world.Alignment);
-            Assert.AreEqual(30, world.Compute);
+            Assert.AreEqual(40, world.Compute.Capacity);
+            Assert.AreEqual(10, result.ComputeSpent);
             Assert.IsEmpty(world.News.PublishDue(op.Clock.TotalMinutes));
             var published = world.News.PublishDue(op.Clock.TotalMinutes + 60);
             Assert.AreEqual(result.News.Count, published.Count);

@@ -250,7 +250,8 @@ Kodlarken netleştirdiğim ayrıntılar (değiştirilebilir):
 | Hedefe uğramak | Düğüme girince kendiliğinden tamamlanır |
 | Rastgelelik | Yok. Aynı hamleler her zaman aynı sonucu verir |
 
-v0.2 değişiklikleri (kontrolde bulunan sorunlar; testler ve aşağıdaki tur tablosu kodla birlikte güncellenecek):
+v0.2 değişiklikleri (kontrolde bulunan sorunlar). Aşağıdaki tur tablosu v0.2 kurallarıyla çözücüde yeniden
+doğrulandı; sayılar değişmedi.
 
 | Konu | v0.1 | v0.2 |
 |---|---|---|

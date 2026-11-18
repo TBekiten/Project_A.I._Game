@@ -37,6 +37,7 @@ Konsolda hata çıkarsa metnini olduğu gibi bana gönder.
 | Fare tekerleği | Yakınlaş / uzaklaş |
 | Boşluk | Şehir saatini durdur |
 | Sol tık (mini oyunda) | Anahtar: hattı aç/kapat · Yük: devreden çıkar / geri ver |
+| Sağ tık (mini oyunda) | Komutu vermeden sonucunu önizle (5 işlem gücü) |
 | Balona tıklamak | A.I.'ın sözünü hızlandır / geç |
 | R (sonda) | Baştan başla |
 

@@ -20,9 +20,13 @@ namespace AIGame.Core.Content
         public string HarmOutcome { get; set; }
         public int HarmAlignment { get; set; }
         public string CaughtOutcome { get; set; }
+        public string NothingChangedOutcome { get; set; }
 
-        public int OperationComputeCost { get; set; } = 10;
-        public int HarmComputeReward { get; set; } = 20;
+        /// <summary>Operasyona girmenin işlem gücü bedeli.</summary>
+        public int EntryComputeCost { get; set; } = 10;
+
+        /// <summary>Başarılı zarar verme operasyonunun kapasiteye kalıcı katkısı (yakalanırsan alınamaz).</summary>
+        public int HarmCapacityGain { get; set; } = 20;
 
         /// <summary>Beceriden bağımsız bedel.</summary>
         public int BaseAttention { get; set; } = 2;
@@ -98,7 +102,8 @@ namespace AIGame.Core.Content
                 SaveAlignment = 12,
                 HarmOutcome = "Çağrı kayıtları silindi; santral saatlerce kör kaldı.",
                 HarmAlignment = -12,
-                CaughtOutcome = "Güvenlik programı seni santralde yakaladı. Hiçbir şey değişmedi.",
+                CaughtOutcome = "Güvenlik programı seni santralde yakaladı.",
+                NothingChangedOutcome = "Hiçbir şey değişmedi.",
 
                 UnseenSummary = "Kayıtlarda yalnızca olağan trafik var. Kimse seni fark etmedi.",
                 SeenSummary = "Güvenlik programı tanımadığı bir süreç gördü ve rapor etti.",

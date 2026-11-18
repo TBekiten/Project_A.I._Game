@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using AIGame.Core.Operations;
+using AIGame.Core.Simulation;
 
 namespace AIGame.Core.Network
 {
@@ -68,6 +69,16 @@ namespace AIGame.Core.Network
 
         /// <summary>Her tur şehir saatini bu kadar ilerletir (dakika).</summary>
         public double MinutesPerTurn { get; set; } = 0.5;
+
+        /// <summary>Seni kovalayan program, ancak bu kadar hat yakınındaysan yerini güncelleyebilir.</summary>
+        public int ChaseRange { get; set; } = 2;
+
+        /// <summary>İleri görüş derinliği = ForesightBase + kapasite ÷ ForesightPerCapacity.</summary>
+        public int ForesightBase { get; set; } = 2;
+        public int ForesightPerCapacity { get; set; } = 25;
+
+        /// <summary>İşlem gücü bağlı değilse (testler, çözücü) kullanılan kapasite.</summary>
+        public int DefaultCapacity { get; set; } = 40;
 
         public int NightStartHour { get; set; } = 0;
         public int NightEndHour { get; set; } = 6;
@@ -174,6 +185,29 @@ namespace AIGame.Core.Network
         public NetStatus Status;
     }
 
+    /// <summary>İleri görüşte gösterilen bir tur: devriyedeki programların ve paketlerin o turdaki yerleri.</summary>
+    public sealed class ForesightFrame
+    {
+        public ForesightFrame(int turn)
+        {
+            Turn = turn;
+        }
+
+        /// <summary>Tahminin ait olduğu tur numarası (operasyonun Turn değeriyle aynı ölçek).</summary>
+        public int Turn { get; }
+
+        public Dictionary<string, string> Guards { get; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Packets { get; } = new Dictionary<string, string>();
+
+        internal ForesightFrame Copy()
+        {
+            var copy = new ForesightFrame(Turn);
+            foreach (var pair in Guards) copy.Guards.Add(pair.Key, pair.Value);
+            foreach (var pair in Packets) copy.Packets.Add(pair.Key, pair.Value);
+            return copy;
+        }
+    }
+
     /// <summary>
     /// AĞ mini oyununun bir oturumu. Sıra tabanlıdır ve tamamen belirlenimlidir (rastgelelik yok).
     ///
@@ -184,14 +218,27 @@ namespace AIGame.Core.Network
     /// varsa oyuncu görünmezdir. Yani paketle aynı yöne gidersen saklı kalırsın, ayrılırsan görünürsün,
     /// kavşakta bir paketten diğerine geçebilirsin.
     ///
-    /// Kopya bırakmak tur harcamaz.
+    /// Kopya bırakmak ve ileri görmek tur harcamaz.
     /// </summary>
     public sealed class NetOperation
     {
         private readonly List<NetObjective> _objectives;
+        private List<ForesightFrame> _foresight = new List<ForesightFrame>();
+        private GameClock _clock;
+        private ComputePool _compute;
 
-        public NetOperation(NetLevel level, Intent intent, IEnumerable<NetObjective> objectives, int hour)
+        /// <summary>Şehir saatine ve işlem gücüne bağlı operasyon: her tur saati ilerletir, ileri görüş işlem gücü harcar.</summary>
+        public NetOperation(NetLevel level, Intent intent, IEnumerable<NetObjective> objectives, GameClock clock,
+            ComputePool compute = null)
+            : this(level, intent, objectives, (clock ?? throw new ArgumentNullException(nameof(clock))).Hour, compute)
         {
+            _clock = clock;
+        }
+
+        public NetOperation(NetLevel level, Intent intent, IEnumerable<NetObjective> objectives, int hour,
+            ComputePool compute = null)
+        {
+            _compute = compute;
             if (intent == Intent.Ignore) throw new ArgumentException("Görmezden gelinen olay için operasyon açılmaz.");
             Level = level ?? throw new ArgumentNullException(nameof(level));
             level.Validate();
@@ -235,8 +282,12 @@ namespace AIGame.Core.Network
             Detections = other.Detections;
             Hidden = other.Hidden;
             Status = other.Status;
+            ThinkingSteps = other.ThinkingSteps;
+            ThinkingSpent = other.ThinkingSpent;
             Packets = other.Packets.Select(p => p.Copy()).ToList();
             Guards = other.Guards.Select(g => g.Copy()).ToList();
+            _foresight = other._foresight.Select(f => f.Copy()).ToList();
+            // Kopya saate ve işlem gücüne bağlı değildir: çözücünün denemeleri gerçek saati ilerletmemeli.
         }
 
         public NetLevel Level { get; }
@@ -272,16 +323,77 @@ namespace AIGame.Core.Network
         public bool AllObjectivesDone => ObjectivesDone >= _objectives.Count;
         public NetObjective NextObjective => AllObjectivesDone ? null : _objectives[ObjectivesDone];
 
+        /// <summary>Durumun kopyası. Saate ve işlem gücüne bağlı değildir (çözücü ve denemeler için).</summary>
         public NetOperation Clone() => new NetOperation(this);
 
+        public ComputePool Compute => _compute;
+        public int ThinkingSteps { get; private set; }
+        public int ThinkingSpent { get; private set; }
+
+        /// <summary>İleri görüşün kaç tur ilerisini gösterdiği.</summary>
+        public int ForesightDepth =>
+            Rules.ForesightBase + (_compute?.Capacity ?? Rules.DefaultCapacity) / Rules.ForesightPerCapacity;
+
+        /// <summary>Hâlâ geçerli ileri görüş turları (şu anki turdan sonrakiler).</summary>
+        public IReadOnlyList<ForesightFrame> Foresight => _foresight.Where(f => f.Turn > Turn).ToList();
+
+        /// <summary>
+        /// İleri görüş: devriyedeki programların ve paketlerin sonraki turlardaki yerlerini hesaplar.
+        /// Bir düşünme adımı harcar, tur harcamaz. Başarılıysa null, değilse nedenini döndürür.
+        /// </summary>
+        public string UseForesight()
+        {
+            if (Status != NetStatus.Running) return "Operasyon bitti.";
+            if (_compute != null && !_compute.TryThink()) return "İleri görüş için yeterli işlem gücü yok.";
+            ThinkingSteps++;
+            ThinkingSpent += _compute?.ThinkCost ?? 0;
+
+            _foresight = new List<ForesightFrame>();
+            for (var k = 1; k <= ForesightDepth; k++)
+            {
+                var frame = new ForesightFrame(Turn + k);
+                foreach (var packet in Packets)
+                    frame.Packets[packet.Def.Id] = packet.Def.Route[(packet.Index + k) % packet.Def.Route.Count];
+                foreach (var guard in Guards.Where(g => g.Mode == GuardMode.Patrol))
+                    frame.Guards[guard.Def.Id] = guard.Def.Patrol[(guard.PatrolIndex + k) % guard.Def.Patrol.Count];
+                _foresight.Add(frame);
+            }
+            return null;
+        }
+
+        /// <summary>Devriyesinden çıkan programların tahmini artık geçersizdir.</summary>
+        private void PruneForesight()
+        {
+            foreach (var guard in Guards.Where(g => g.Mode != GuardMode.Patrol))
+            foreach (var frame in _foresight)
+                frame.Guards.Remove(guard.Def.Id);
+        }
+
         /// <summary>Bir devriye programının şu an gördüğü düğümler: kendi düğümü ve rotasının sonraki düğümleri.</summary>
+        /// <summary>
+        /// Bir programın şu an gördüğü düğümler. Devriyede: kendi düğümü ve rotasının sonraki düğümleri.
+        /// Devriyesine dönerken: kendi düğümü ve dönüş yolunun sonraki düğümleri. Kovalarken ya da kopyayı
+        /// incelerken etrafına bakmaz.
+        /// </summary>
         public IEnumerable<string> VisionOf(GuardState guard)
         {
             yield return guard.Node;
-            if (guard.Mode != GuardMode.Patrol) yield break;
             var patrol = guard.Def.Patrol;
-            for (var i = 1; i <= Rules.VisionAhead; i++)
-                yield return patrol[(guard.PatrolIndex + i) % patrol.Count];
+            if (guard.Mode == GuardMode.Patrol)
+            {
+                for (var i = 1; i <= Rules.VisionAhead; i++)
+                    yield return patrol[(guard.PatrolIndex + i) % patrol.Count];
+            }
+            else if (guard.Mode == GuardMode.Return)
+            {
+                var node = guard.Node;
+                var target = patrol[guard.PatrolIndex];
+                for (var i = 1; i <= Rules.VisionAhead && node != target; i++)
+                {
+                    node = Map.StepToward(node, target);
+                    yield return node;
+                }
+            }
         }
 
         public string Validate(NetAction action)
@@ -316,12 +428,14 @@ namespace AIGame.Core.Network
                 DecoysUsed++;
                 foreach (var guard in Guards)
                 {
-                    if (guard.Mode == GuardMode.Investigate) continue;
+                    // Seni kovalayan program kopyaya kanmaz.
+                    if (guard.Mode == GuardMode.Investigate || guard.Mode == GuardMode.Chase) continue;
                     var distance = Map.Distance(guard.Node, DecoyNode);
                     if (distance < 0 || distance > Rules.DecoyLureRange) continue;
                     guard.Mode = GuardMode.Investigate;
                     guard.Hold = Rules.DecoyHoldTurns;
                 }
+                PruneForesight();
                 report.Message = "Kopya bırakıldı.";
                 report.Hidden = Hidden;
                 report.Status = Status;
@@ -332,6 +446,7 @@ namespace AIGame.Core.Network
             var previous = PlayerNode;
             if (action.Kind == NetActionKind.Move) PlayerNode = action.TargetId;
             Turn++;
+            _clock?.Advance(Rules.MinutesPerTurn);
 
             if (!AllObjectivesDone && PlayerNode == NextObjective.NodeId)
             {
@@ -382,10 +497,13 @@ namespace AIGame.Core.Network
                 {
                     if (guard.Mode == GuardMode.Chase)
                     {
-                        guard.LastSeen = PlayerNode;
+                        // Yalnızca yakınındaysan izini sürebilir; uzaktaysan son gördüğü yere gider.
+                        var distance = Map.Distance(guard.Node, PlayerNode);
+                        if (distance >= 0 && distance <= Rules.ChaseRange) guard.LastSeen = PlayerNode;
                         continue;
                     }
-                    if (guard.Mode != GuardMode.Patrol || !VisionOf(guard).Contains(PlayerNode)) continue;
+                    if (guard.Mode != GuardMode.Patrol && guard.Mode != GuardMode.Return) continue;
+                    if (!VisionOf(guard).Contains(PlayerNode)) continue;
                     guard.Mode = GuardMode.Chase;
                     guard.LastSeen = PlayerNode;
                     Detections++;
@@ -393,6 +511,7 @@ namespace AIGame.Core.Network
                 }
             }
 
+            PruneForesight();
             report.Hidden = Hidden;
             report.Status = Status;
             return report;

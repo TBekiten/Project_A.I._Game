@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using AIGame.Core.Narrative;
+using AIGame.Core.Sentinel;
 
 namespace AIGame.Core.Operations
 {
@@ -55,8 +56,20 @@ namespace AIGame.Core.Operations
         /// <summary>Sentinel'in dikkatine eklenen miktar.</summary>
         public int AttentionDelta { get; set; }
 
-        /// <summary>İşlem gücüne etkisi.</summary>
-        public int ComputeDelta { get; set; }
+        /// <summary>Kapasiteye kalıcı etkisi (başarılı zarar verme operasyonları kapasiteyi büyütür).</summary>
+        public int CapacityDelta { get; set; }
+
+        /// <summary>Bu operasyonda harcanan işlem gücü: giriş bedeli ve düşünme adımları.</summary>
+        public int ComputeSpent { get; set; }
+
+        /// <summary>Kaç düşünme adımı kullanıldı (önizleme, ileri görüş...).</summary>
+        public int ThinkingSteps { get; set; }
+
+        /// <summary>Sentinel'in bu operasyonda gördüğü taktikler.</summary>
+        public List<Tactic> Tactics { get; } = new List<Tactic>();
+
+        /// <summary>Tekrarlanan taktiklerin ek dikkat bedeli. WorldState.Apply doldurur ve dikkate ekler.</summary>
+        public int SignatureAttention { get; set; }
 
         public List<OutcomeLine> Outcomes { get; } = new List<OutcomeLine>();
         public List<NewsItem> News { get; } = new List<NewsItem>();
@@ -65,7 +78,7 @@ namespace AIGame.Core.Operations
         /// <summary>Operasyon sonunda tanınan (kimliği ortaya çıkan) düğümler.</summary>
         public List<string> RevealedNodeIds { get; } = new List<string>();
 
-        /// <summary>Sentinel oyuncunun bir taktiğini (ör. kopya yemi) inceleyip öğrendi.</summary>
-        public bool SentinelLearnedDecoy { get; set; }
+        /// <summary>Kopya ele geçirildi; Sentinel onu inceleyip kopya yemi imzasını güçlendirir.</summary>
+        public bool DecoyCaptured { get; set; }
     }
 }
