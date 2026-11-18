@@ -76,8 +76,81 @@ Yenilik her mini oyuna ayrı ayrı serpiştirilmek yerine şu kurallarla sağlan
 |---|---|---|---|
 | AKIŞ | Şebekeyi hedef duruma getirmek; sıra önemli | Enerji olayları (ileride su, finans kuralları) | Çekirdek ve Unity prototipi yazıldı; Unity'de henüz denenmedi |
 | AĞ | Kalabalık trafiğin içinde saklanarak hedefe ve çıkışa ulaşmak | Telekom olayları ve Sentinel karşılaşmaları | Çekirdek ve ilk bölüm yazıldı; Unity tarafı yok |
-| KOD | Örneklerden dönüşüm kuralını çıkarmak | Henüz kararlaştırılmadı | Yazılmadı |
-| GÖZLEM | Binayı veri örüntüsünden tanımak | Henüz kararlaştırılmadı | Yazılmadı |
+| KOD | Örneklerden dönüşüm kuralını çıkarmak | Bir sektördeki ilk olay (sisteme ilk giriş) | Yazılmadı |
+| GÖZLEM | Binayı veri örüntüsünden tanımak | Yeni bir bölge ilk kez açıldığında, şehir ekranında | Yazılmadı |
+
+## Yapay zekâ mantığı
+
+Oyuncu yapay zekâyı oynuyor; mini oyunlar onun düşünme biçimini yansıtmalı. Üç kural bunu sağlar.
+Kurallar belirlenimli kalır (rastgelelik yok); belirsizlik zarda değil, oyuncunun bildiklerindedir.
+
+### 1. Düşünmek işlem gücü harcar, eylemek iz bırakır
+
+İşlem gücünün iki değeri var:
+
+- **Kapasite:** A.I.'ın büyüklüğü. Başlangıçta 40. Başarılı her zarar verme operasyonu kapasiteyi
+  kalıcı olarak artırır (AKIŞ +25, AĞ +20). Zarar vermek A.I.'ı "daha zeki" yapar.
+- **Kullanılabilir işlem gücü:** O an harcanabilecek kısım. Şehir saatiyle kapasiteye doğru dolar
+  (v0.1: saatte 10).
+
+Harcamalar:
+
+| Harcama | Bedel |
+|---|---|
+| Operasyona girmek | 10 |
+| Bir düşünme adımı (önizleme, ileri görüş, ek örnek, ek veri, A.I.'ın tahmini) | 5 |
+
+Düşünme araçları:
+
+- **AKIŞ — önizleme:** Bir komutu vermeden önce sonucunu görürsün: hatlardaki akış, sigortanın atıp
+  atmayacağı, komutun izi. Şebekeyi değiştirmez, saati ilerletmez, iz bırakmaz.
+- **AĞ — ileri görüş:** Güvenlik programlarının ve paketlerin sonraki N turdaki yerlerini gösterir.
+  N = 2 + kapasite ÷ 25 (aşağı yuvarlanır; başlangıçta 3). Gösterim N tur ekranda kalır; bir program
+  devriyesinden çıkarsa (kovalama, kopya) onun tahmini silinir.
+- **KOD ve GÖZLEM:** Aşağıda, 3. kuralda.
+
+Önizleme ve ileri görüş çözümü bulmaz; yalnızca senin seçtiğin hamlenin ya da anın sonucunu gösterir.
+
+### 2. Sentinel öğrenen bir sistemdir
+
+Sentinel her operasyonun kaydından oyuncunun taktiklerini çıkarır. Aynı taktiği tekrar kullandıkça
+o taktik bir imzaya dönüşür ve her kullanımı daha fazla dikkat çeker. Böylece oyuncu çeşitli oynamaya
+itilir; dört mini oyunun 6–7 saati taşımasına da yardım eder.
+
+İlk taktik listesi (v0.1):
+
+| Taktik | Nasıl anlaşılır |
+|---|---|
+| Kopya yemi | AĞ'da kopya bırakmak |
+| Kendiliğinden attırma | AKIŞ'ta bir yükü geri vererek sigortayı attırmak |
+| Yük atarak kurtarma | AKIŞ'ta yük atıp kurtarma hedefine ulaşmak |
+| Aktarma | AKIŞ'ta bir yükü başka bir hatta aktarmak |
+| Saat dilimi | Operasyonun saati: gece (00–06), gündüz (06–17), akşam (17–24); her dilim ayrı taktik |
+
+Kurallar:
+
+- Her taktiğin bir **imza seviyesi** var, 0'dan başlar. Taktik kullanılınca +1; kopya ele geçirilirse ayrıca +2.
+- Bir taktiği kullanmanın ek dikkat bedeli = 2 × o taktiğin kullanımdan önceki imza seviyesi
+  (ilk kullanım +0, ikinci +2, üçüncü +4...).
+- Bir operasyonda kullanılmayan her taktiğin seviyesi 1 azalır (en az 0): Sentinel'in hafızası tazelenmezse zayıflar.
+- Oyuncu, Sentinel'in hangi taktiği ne kadar tanıdığını görür. Görünmeyen bir ceza bir şey öğretmez.
+- İleride Sentinel karşılaşmalarında karşı önlem de alır (PDF'teki "Ayna": kopyaya güvenene sahte çıkışlar).
+
+### 3. Yapay zekânın tahminleri güven düzeyiyle gelir
+
+A.I. bir şeyi bildiğini sandığında bunu bir yüzdeyle söyler ve bazen kendinden emin şekilde yanılır.
+Güven, toplanan verilerden hesaplanır ve bölüm verisinde tanımlıdır; zar atılmaz.
+
+- **GÖZLEM:** A.I. her binaya bir tahmin ve güven verir ("hastane, %62"). Oyuncu tahmini kabul eder,
+  bir düşünme adımıyla bir veri kaynağı daha açar (yeni grafik; tahmin ve güven güncellenir) ya da
+  kendisi etiketler. Bazı binalarda ilk veriler yanıltıcıdır. Yanlış etiket oyunda kalır ve bir sonraki
+  operasyonda bir tutarsızlık olarak görünür (ör. "fabrika" diye etiketlenen yük gece ambulans alır).
+- **KOD:** Örneklere uyan kural sayısı her zaman görünür. Ek örnek istemek ve A.I.'ın tahmini çıktısını
+  görmek birer düşünme adımıdır (iz yok). A.I. en basit uyan kuralı uygular; birden fazla kural uyuyorsa
+  yanılabilir. Yanlış cevap +3 iz. İki bedel farklı para biriminde olduğu için "sormak her zaman daha
+  ucuz" sorunu kalkar.
+- **AKIŞ'taki "?" binalar:** A.I.'ın tahmini güvenle gösterilir ("depo, %55"); gerçek kimlik
+  operasyondan sonra ortaya çıkar.
 
 ## Sayılar ve sistemler
 
@@ -100,7 +173,9 @@ iz 3–6 ve sonuç iyi/nötr       → açıklanamayan müdahale
 iz > 6                         → saldırı
 ```
 
-**İşlem gücü.** Her operasyonun bedeli 10. Başarılı bir zarar verme operasyonu 25 kazandırır.
+**İşlem gücü.** Kapasite ve kullanılabilir işlem gücü; ayrıntısı "Yapay zekâ mantığı" bölümünde.
+
+**Sentinel imzası.** Tekrarlanan taktiklerin ek dikkat bedeli; ayrıntısı "Yapay zekâ mantığı" bölümünde.
 
 **Zaman.** Şehir ekranında saat akar (prototipte 1 gerçek saniye = 1 oyun dakikası). Olay kartı,
 mini oyun ve sonuç ekranında durur. Mini oyunda her komut saati 1 dakika ilerletir.
@@ -175,6 +250,17 @@ Kodlarken netleştirdiğim ayrıntılar (değiştirilebilir):
 | Hedefe uğramak | Düğüme girince kendiliğinden tamamlanır |
 | Rastgelelik | Yok. Aynı hamleler her zaman aynı sonucu verir |
 
+v0.2 değişiklikleri (kontrolde bulunan sorunlar; testler ve aşağıdaki tur tablosu kodla birlikte güncellenecek):
+
+| Konu | v0.1 | v0.2 |
+|---|---|---|
+| Kovalama | Görünür olduğun sürece program seni haritanın her yerinden takip ediyordu | Yalnızca 2 hat yakınındaysan takip eder; uzaktaysan son gördüğü yere gider, orada bulamazsa iz kaybolur |
+| Devriyesine dönen program | Hiçbir şey görmüyordu | Dönüş yolunda kendi düğümünü ve sonraki 2 düğümü görür |
+| Kopya ve seni kovalayan program | Kopya onu da üzerine çekiyordu | Seni kovalayan program kopyaya kanmaz |
+| Saklıyken devriye üstünden geçerse | Onaylanan kuraldan sapmaydı | Böyle kalıyor: saklı oyuncuyu yalnızca peşindeki program yakalar |
+| Yakalanmak | Tamamlanan hedefler de boşa gidiyordu | Tüm hedefler tamamlandıysa etkisi gerçekleşir; işlem gücü kazancı yine kaybedilir, okuma saldırıdır |
+| AĞ'da şehir saati | İlerlemiyordu | Her tur yarım dakika |
+
 Sonuç sayıları:
 
 ```
@@ -211,11 +297,15 @@ Olayın metinleri yer tutucu.
 2. Mini oyunda yapılan ile şehirde görülen arasında anlamlı bir bağ hissediliyor mu?
 3. "Kimseyi feda etmeden ama iz bırakarak" ile "birini feda edip gizli kalarak" arasında seçim ilginç mi?
 4. Doğal görünen sabotaj yolu keşfedilebilir mi, yoksa fazla mı gizli?
+5. Önizleme ve ileri görüş bulmacayı fazla kolaylaştırıyor mu?
+6. Sentinel imzası oyuncuyu gerçekten farklı taktikler denemeye itiyor mu?
 
 ## Açık konular
 
-- KOD ve GÖZLEM hangi olaylarda oynanacak? İkisi de belirli bir şehir sistemine bağlı değil.
-- Kopya şu an fazla güçlü olabilir: bölümün başında bırakmak iki programı da çekiyor. Oynayınca bakılacak.
+- Kurtarma yolunun büyüme kaynağı: kapasite yalnızca zarar vermekle artıyor. İyi yolda neyin büyüyeceği
+  (ör. insanların güveninin yeni erişim açması) kararlaştırılmadı.
+- İşlem gücü sayıları (dolma hızı, düşünme adımının bedeli) oynayınca ayarlanacak.
+- Kopya hâlâ güçlü olabilir; imza ve v0.2 düzeltmeleriyle yeterince dengelenip dengelenmediği oynayınca görülecek.
 - Sonların sayısı ve çubuktaki eşikleri.
 - Tutorial'ın içeriği.
 - PDF'den geri gelecekler: risk seviyesi seçimi, aynı anda çıkan olaylar, Sentinel karşılaşmaları,
