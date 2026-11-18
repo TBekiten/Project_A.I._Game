@@ -86,6 +86,9 @@ Kurallar belirlenimli kalır (rastgelelik yok); belirsizlik zarda değil, oyuncu
 
 ### 1. Düşünmek işlem gücü harcar, eylemek iz bırakır
 
+*Durum: işlem gücü modeli ve AKIŞ önizlemesi çekirdekte ve Unity prototipinde (sağ tık). AĞ ileri görüşü
+yalnızca çekirdekte; AĞ'ın ekranı henüz yok.*
+
 İşlem gücünün iki değeri var:
 
 - **Kapasite:** A.I.'ın büyüklüğü. Başlangıçta 40. Başarılı her zarar verme operasyonu kapasiteyi
@@ -113,6 +116,8 @@ Düşünme araçları:
 
 ### 2. Sentinel öğrenen bir sistemdir
 
+*Durum: çekirdekte; sonuç panelinde ve şehir ekranındaki "Sentinel'in tanıdıkları" panelinde görünüyor.*
+
 Sentinel her operasyonun kaydından oyuncunun taktiklerini çıkarır. Aynı taktiği tekrar kullandıkça
 o taktik bir imzaya dönüşür ve her kullanımı daha fazla dikkat çeker. Böylece oyuncu çeşitli oynamaya
 itilir; dört mini oyunun 6–7 saati taşımasına da yardım eder.
@@ -137,6 +142,8 @@ Kurallar:
 - İleride Sentinel karşılaşmalarında karşı önlem de alır (PDF'teki "Ayna": kopyaya güvenene sahte çıkışlar).
 
 ### 3. Yapay zekânın tahminleri güven düzeyiyle gelir
+
+*Durum: henüz uygulanmadı (AKIŞ'taki "?" binaların güven gösterimi dahil). KOD ve GÖZLEM yazılırken yapılacak.*
 
 A.I. bir şeyi bildiğini sandığında bunu bir yüzdeyle söyler ve bazen kendinden emin şekilde yanılır.
 Güven, toplanan verilerden hesaplanır ve bölüm verisinde tanımlıdır; zar atılmaz.
