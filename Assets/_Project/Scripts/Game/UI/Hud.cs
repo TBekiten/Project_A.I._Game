@@ -312,8 +312,8 @@ namespace AIGame.Game.UI
                 var text = line.Name + ":  " + line.FlowBefore + " → " + line.FlowAfter + " / " + line.Capacity +
                            (line.Trips ? "   SİGORTA ATAR" : "");
                 var color = line.Trips ? Danger : line.FlowAfter > line.Capacity * 0.9f ? Warning : Text;
-                GUI.Label(new Rect(x, y, w, 20f), Tint(text, color), _tiny);
-                y += 19f;
+                GUI.Label(new Rect(x, y, w, 24f), Tint(text, color), _small);
+                y += 23f;
             }
 
             var dark = preview.Loads.Where(l => !l.PoweredAfter).Select(l => l.Name).ToList();
@@ -648,8 +648,22 @@ namespace AIGame.Game.UI
         private static string Tint(string text, Color color) =>
             "<color=#" + ColorUtility.ToHtmlStringRGB(color) + ">" + text + "</color>";
 
-        private static GUIStyle Centered(GUIStyle style) => new GUIStyle(style) { alignment = TextAnchor.UpperCenter };
-        private static GUIStyle RightAligned(GUIStyle style) => new GUIStyle(style) { alignment = TextAnchor.UpperRight };
+        // OnGUI her karede birkaç kez çağrılır; hizalanmış stilleri her seferinde yeniden üretmemek için önbellek.
+        private readonly Dictionary<GUIStyle, GUIStyle> _centered = new Dictionary<GUIStyle, GUIStyle>();
+        private readonly Dictionary<GUIStyle, GUIStyle> _rightAligned = new Dictionary<GUIStyle, GUIStyle>();
+
+        private GUIStyle Centered(GUIStyle style) => Aligned(_centered, style, TextAnchor.UpperCenter);
+        private GUIStyle RightAligned(GUIStyle style) => Aligned(_rightAligned, style, TextAnchor.UpperRight);
+
+        private static GUIStyle Aligned(Dictionary<GUIStyle, GUIStyle> cache, GUIStyle style, TextAnchor anchor)
+        {
+            if (!cache.TryGetValue(style, out var aligned))
+            {
+                aligned = new GUIStyle(style) { alignment = anchor };
+                cache.Add(style, aligned);
+            }
+            return aligned;
+        }
 
         private void EnsureStyles()
         {

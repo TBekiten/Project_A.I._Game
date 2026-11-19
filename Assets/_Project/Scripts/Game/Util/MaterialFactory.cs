@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace AIGame.Game.Util
@@ -10,6 +11,24 @@ namespace AIGame.Game.Util
     {
         private static Shader _lit;
         private static Shader _unlit;
+
+        // Çalışma anında üretilen malzeme ve dokular sahne silinince kendiliğinden yok olmaz;
+        // yeniden başlatmada bellek sızmaması için burada tutulup ReleaseAll ile silinir.
+        private static readonly List<Object> Created = new List<Object>();
+
+        /// <summary>Bu sınıfın ürettiği tüm malzeme ve dokuları yok eder (prototipi yeniden başlatırken).</summary>
+        public static void ReleaseAll()
+        {
+            foreach (var asset in Created)
+                if (asset != null) Object.Destroy(asset);
+            Created.Clear();
+        }
+
+        private static T Track<T>(T asset) where T : Object
+        {
+            Created.Add(asset);
+            return asset;
+        }
 
         private static Shader LitShader
         {
@@ -33,7 +52,7 @@ namespace AIGame.Game.Util
 
         public static Material Lit(Color color, float smoothness = 0.15f)
         {
-            var material = new Material(LitShader);
+            var material = Track(new Material(LitShader));
             SetBaseColor(material, color);
             if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", smoothness);
             if (material.HasProperty("_Glossiness")) material.SetFloat("_Glossiness", smoothness);
@@ -53,7 +72,7 @@ namespace AIGame.Game.Util
         /// <summary>Işıktan etkilenmeyen düz renk. HDR (1'den büyük) değerler bloom ile parlar.</summary>
         public static Material Unlit(Color color)
         {
-            var material = new Material(UnlitShader);
+            var material = Track(new Material(UnlitShader));
             SetBaseColor(material, color);
             return material;
         }
@@ -72,12 +91,12 @@ namespace AIGame.Game.Util
         /// <summary>Tek renkli, tekrarlanabilir ızgara dokusu (mini oyun zemini için).</summary>
         public static Texture2D GridTexture(Color background, Color line, int size = 64, int lineWidth = 1)
         {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, true)
+            var texture = Track(new Texture2D(size, size, TextureFormat.RGBA32, true)
             {
                 wrapMode = TextureWrapMode.Repeat,
                 filterMode = FilterMode.Bilinear,
                 hideFlags = HideFlags.DontSave
-            };
+            });
             var pixels = new Color[size * size];
             for (var y = 0; y < size; y++)
             for (var x = 0; x < size; x++)

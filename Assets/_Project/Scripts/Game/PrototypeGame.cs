@@ -75,6 +75,10 @@ namespace AIGame.Game
         private double _aftermathStart;
         private string _hovered;
 
+        // Şehirdeki şebeke yalnızca olayda ve operasyondan dönüşte değişir; her karede yeniden hesaplamamak için önbellek.
+        private GridEvaluation _cityEvaluation;
+        private GridEvaluation _hoverEvaluation;
+
         public EnergyScenario Scenario { get; private set; }
         public WorldState World { get; private set; }
         public PowerGrid Grid { get; private set; }
@@ -166,13 +170,14 @@ namespace AIGame.Game
                 DropToY = 0.5f,
                 ShowLineLabels = false
             });
-            CityLayer.Refresh(Grid.Evaluate());
+            _cityEvaluation = Grid.Evaluate();
+            CityLayer.Refresh(_cityEvaluation);
             CityLayer.gameObject.SetActive(false);
 
             Minigame = EnergyMinigameScreen.Create(_root, Grid);
             PostProcessingSetup.CreateGlobalVolume(_root);
 
-            City.ApplyPowerState(Grid.Evaluate().IsPowered);
+            City.ApplyPowerState(_cityEvaluation.IsPowered);
             foreach (var line in Scenario.IntroVoice) Voice.Say(line);
             Phase = GamePhase.City;
         }
@@ -198,6 +203,7 @@ namespace AIGame.Game
         {
             StopAllCoroutines();
             if (_root != null) Destroy(_root.gameObject);
+            MaterialFactory.ReleaseAll();
             Build();
         }
 
@@ -226,9 +232,6 @@ namespace AIGame.Game
                 Voice.Say("Prototip burada bitiyor. [R] ile baştan başlayabilir, başka bir yol deneyebilirsin.");
             }
 
-            if ((Phase == GamePhase.City || Phase == GamePhase.Aftermath) && SystemLayerVisible)
-                CityLayer.Refresh(Grid.Evaluate());
-
             UpdateHover();
         }
 
@@ -245,7 +248,7 @@ namespace AIGame.Game
             if (GuiInput.ConsumePress(KeyCode.Tab) && cityControls)
             {
                 CityLayer.gameObject.SetActive(!CityLayer.gameObject.activeSelf);
-                if (SystemLayerVisible) CityLayer.Refresh(Grid.Evaluate());
+                if (SystemLayerVisible) CityLayer.Refresh(_cityEvaluation);
             }
 
             if (GuiInput.ConsumePress(KeyCode.Space) && cityControls) Paused = !Paused;
@@ -272,12 +275,17 @@ namespace AIGame.Game
             {
                 HoverText = null;
                 _hovered = null;
+                _hoverEvaluation = null;
                 return;
             }
 
             var interactive = Phase == GamePhase.Minigame;
-            var evaluation = interactive && Operation != null ? Operation.Current : Grid.Evaluate();
-            HoverText = GridText.Describe(Grid, evaluation, id, interactive);
+            var evaluation = interactive && Operation != null ? Operation.Current : _cityEvaluation;
+            if (id != _hovered || evaluation != _hoverEvaluation)
+            {
+                HoverText = GridText.Describe(Grid, evaluation, id, interactive);
+                _hoverEvaluation = evaluation;
+            }
 
             if (interactive && id != _hovered && !_hintsShown.Contains(id) && Scenario.Hints.TryGetValue(id, out var hint))
             {
@@ -293,7 +301,8 @@ namespace AIGame.Game
         {
             Phase = GamePhase.EventIntro;
             Grid.SetFault(Scenario.FaultLineId);
-            var evaluation = Grid.Evaluate();
+            _cityEvaluation = Grid.Evaluate();
+            var evaluation = _cityEvaluation;
             City.SetFaultBeacon(true);
             City.AnimatePowerState(evaluation.IsPowered, RevealOrder, 0.2f);
             CityLayer.Refresh(evaluation);
@@ -426,7 +435,8 @@ namespace AIGame.Game
             yield return Fade(0f, 0.45f);
             yield return new WaitForSeconds(0.5f);
 
-            var evaluation = Grid.Evaluate();
+            _cityEvaluation = Grid.Evaluate();
+            var evaluation = _cityEvaluation;
             var duration = City.AnimatePowerState(evaluation.IsPowered, RevealOrder);
             yield return new WaitForSeconds(duration);
 

@@ -38,6 +38,16 @@ namespace AIGame.Core.Narrative
         /// <summary>Saati gelen haberleri yayımlar ve yeni yayımlananları döndürür.</summary>
         public IReadOnlyList<NewsItem> PublishDue(double nowMinutes)
         {
+            // Her karede çağrılır: yayımlanacak haber yoksa hiçbir şey ayırmadan dön.
+            var any = false;
+            foreach (var item in _pending)
+            {
+                if (item.TimeMinutes > nowMinutes) continue;
+                any = true;
+                break;
+            }
+            if (!any) return Array.Empty<NewsItem>();
+
             var due = _pending.Where(n => n.TimeMinutes <= nowMinutes).OrderBy(n => n.TimeMinutes).ToList();
             if (due.Count == 0) return Array.Empty<NewsItem>();
             foreach (var item in due) _pending.Remove(item);

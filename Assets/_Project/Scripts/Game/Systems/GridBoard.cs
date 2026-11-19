@@ -85,6 +85,7 @@ namespace AIGame.Game.Systems
         private readonly Dictionary<string, LineVisual> _lines = new Dictionary<string, LineVisual>();
         private readonly Dictionary<string, NodeVisual> _nodes = new Dictionary<string, NodeVisual>();
         private readonly HashSet<string> _flashing = new HashSet<string>();
+        private static readonly RaycastHit[] HitBuffer = new RaycastHit[32];
 
         private BoardStyle _style;
         private GridEvaluation _last;
@@ -272,10 +273,11 @@ namespace AIGame.Game.Systems
             elementId = null;
             if (camera == null || !isActiveAndEnabled) return false;
             var ray = camera.ScreenPointToRay(screenPosition);
-            var hits = Physics.RaycastAll(ray, 5000f);
+            var count = Physics.RaycastNonAlloc(ray, HitBuffer, 5000f);
             var bestDistance = float.MaxValue;
-            foreach (var hit in hits)
+            for (var i = 0; i < count; i++)
             {
+                var hit = HitBuffer[i];
                 var target = hit.collider.GetComponent<GridPickTarget>();
                 if (target == null || target.Board != this || hit.distance >= bestDistance) continue;
                 bestDistance = hit.distance;

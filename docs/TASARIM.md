@@ -313,6 +313,14 @@ Olayın metinleri yer tutucu.
 - Kurtarma yolunun büyüme kaynağı: kapasite yalnızca zarar vermekle artıyor. İyi yolda neyin büyüyeceği
   (ör. insanların güveninin yeni erişim açması) kararlaştırılmadı.
 - İşlem gücü sayıları (dolma hızı, düşünme adımının bedeli) oynayınca ayarlanacak.
+- **Sentinel dengesi bozuk (simülasyonla gösterildi).** `Tools/Balance/sentinel_attention.py`, 40 operasyonluk
+  bir oyunda dikkatin birikimini hesaplıyor. Şu anki kurallarla her oyuncu bulunuyor: tek taktik kullanan
+  6.–9. operasyonda, kimseyi feda etmeyen 7.'de, taktiklerini değiştiren dikkatli oyuncu bile 24.'de.
+  Nedenleri: dikkat hiç azalmıyor, imza seviyesinin üst sınırı yok (tekrar bedeli sınırsız büyüyor),
+  saat dilimi taktiği oyuncunun seçmediği bir şeyi cezalandırıyor. Karar bekleyen öneri: saat dilimi
+  taktiğini kaldırmak, imza seviyesine üst sınır (3) koymak, dikkatin operasyonlar arasında azalması
+  (ör. 6–8). Kimseyi feda etmeyen oyuncunun taban bedeli (11) yine de hızlı birikiyor; bu yolun ne kadar
+  sürdürülebilir olacağı ayrıca kararlaştırılmalı.
 - Kopya hâlâ güçlü olabilir; imza ve v0.2 düzeltmeleriyle yeterince dengelenip dengelenmediği oynayınca görülecek.
 - Sonların sayısı ve çubuktaki eşikleri.
 - Tutorial'ın içeriği.
