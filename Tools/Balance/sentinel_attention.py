@@ -16,7 +16,7 @@ Varsayımlar (değişebilir, en altta duyarlılık tablosu var):
   - Oyunda 40 operasyon var (6-7 saat, operasyon başına ~10 dakika).
   - Olayların saat dilimi oyuncunun seçimi değil; iki senaryo: hepsi akşam / üç dilime eşit dağılmış.
   - Sentinel imzası: kullanılan her taktik için ek bedel = 2 x seviye; kullanılınca +1, kullanılmayınca -1,
-    kopya ele geçerse +2.
+    kopya ele geçerse +2. Şu anki kurallarda seviye en fazla 3 ve her olayda dikkat önce 6 azalır.
 
 Çalıştırma:  python3 Tools/Balance/sentinel_attention.py
 """
@@ -48,10 +48,18 @@ SLOT_SCENARIOS = {
 }
 
 
-def simulate(policy, slot_of, time_slot_tactic=True, slot_cap=None, decay_per_op=0):
+def simulate(policy, slot_of, time_slot_tactic=True, slot_cap=None, decay_per_op=0, level_cap=None):
     levels = {}
     attention = 0
     found_at = None
+
+    def capped(tactic, level):
+        if level_cap is not None:
+            level = min(level, level_cap)
+        if slot_cap is not None and tactic.startswith("saat_"):
+            level = min(level, slot_cap)
+        return level
+
     for i in range(OPERATIONS):
         name, base, tactic, decoy_captured = policy[i % len(policy)]
         used = set()
@@ -67,11 +75,9 @@ def simulate(policy, slot_of, time_slot_tactic=True, slot_cap=None, decay_per_op
         for t in set(levels) | used:
             level = levels.get(t, 0)
             level = level + 1 if t in used else max(0, level - 1)
-            if slot_cap is not None and t.startswith("saat_"):
-                level = min(level, slot_cap)
-            levels[t] = level
+            levels[t] = capped(t, level)
         if decoy_captured:
-            levels["kopya"] = levels.get("kopya", 0) + DECOY_CAPTURE_LEVELS
+            levels["kopya"] = capped("kopya", levels.get("kopya", 0) + DECOY_CAPTURE_LEVELS)
 
         if found_at is None and attention >= 100:
             found_at = i + 1
@@ -79,10 +85,11 @@ def simulate(policy, slot_of, time_slot_tactic=True, slot_cap=None, decay_per_op
 
 
 VARIANTS = [
-    ("Şu anki kurallar", dict()),
-    ("Saat dilimi taktiği yok", dict(time_slot_tactic=False)),
-    ("Saat dilimi en fazla seviye 2", dict(slot_cap=2)),
-    ("Saat dilimi yok + operasyon başına -4 dikkat", dict(time_slot_tactic=False, decay_per_op=4)),
+    ("Eski kurallar (v0.1)", dict()),
+    ("Saat dilimi yok, imza en fazla 3", dict(time_slot_tactic=False, level_cap=3)),
+    # Oyundaki kurallar: SentinelRules.MaxLevel = 3, WorldState.AttentionDecayPerEvent = 6.
+    ("Şu anki kurallar (+ olay başına -6)", dict(time_slot_tactic=False, level_cap=3, decay_per_op=6)),
+    ("Karşılaştırma: olay başına -8", dict(time_slot_tactic=False, level_cap=3, decay_per_op=8)),
 ]
 
 
@@ -104,11 +111,15 @@ def main():
             print(row)
         print()
 
-    print("Duyarlılık: 'Çeşitli ve dikkatli' oyuncu, saat dilimi yok, sönme yok; operasyon sayısı değişirse")
+    print("Duyarlılık (şu anki kurallar): operasyon sayısı değişirse")
     global OPERATIONS
+    current = VARIANTS[2][1]
     for ops in (30, 40, 50):
         OPERATIONS = ops
-        print(f"  {ops} operasyon: {fmt(simulate(POLICIES['Çeşitli ve dikkatli'], SLOT_SCENARIOS['hepsi akşam'], time_slot_tactic=False))}")
+        row = f"  {ops} operasyon:"
+        for policy_name, policy in POLICIES.items():
+            row += f"  {policy_name.split('(')[-1].rstrip(')')[:22]}: {fmt(simulate(policy, SLOT_SCENARIOS['hepsi akşam'], **current))}"
+        print(row)
 
 
 if __name__ == "__main__":

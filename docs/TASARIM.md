@@ -130,15 +130,28 @@ itilir; dört mini oyunun 6–7 saati taşımasına da yardım eder.
 | Kendiliğinden attırma | AKIŞ'ta bir yükü geri vererek sigortayı attırmak |
 | Yük atarak kurtarma | AKIŞ'ta yük atıp kurtarma hedefine ulaşmak |
 | Aktarma | AKIŞ'ta bir yükü başka bir hatta aktarmak |
-| Saat dilimi | Operasyonun saati: gece (00–06), gündüz (06–17), akşam (17–24); her dilim ayrı taktik |
+
+Operasyon saati taktik sayılmıyor: oyuncu operasyonun saatini seçemiyor. Zamanlama oyuncunun kararı
+olursa geri eklenebilir.
 
 Kurallar:
 
 - Her taktiğin bir **imza seviyesi** var, 0'dan başlar. Taktik kullanılınca +1; kopya ele geçirilirse ayrıca +2.
+  Seviye en fazla 3 olabilir.
 - Bir taktiği kullanmanın ek dikkat bedeli = 2 × o taktiğin kullanımdan önceki imza seviyesi
   (ilk kullanım +0, ikinci +2, üçüncü +4...).
 - Bir operasyonda kullanılmayan her taktiğin seviyesi 1 azalır (en az 0): Sentinel'in hafızası tazelenmezse zayıflar.
+- **Dikkat söner:** her olayın sonunda (görmezden gelmek dahil), yeni dikkat eklenmeden önce dikkat 6 azalır.
 - Oyuncu, Sentinel'in hangi taktiği ne kadar tanıdığını görür. Görünmeyen bir ceza bir şey öğretmez.
+- Sayılar simülasyonla seçildi (`Tools/Balance/sentinel_attention.py`, 40 operasyonluk oyun). Hedef:
+  taktiklerini değiştiren oyuncu bulunmaz; tek taktikle oynayan oyunun ikinci yarısında bulunur.
+
+  | Oyuncu tipi | Sentinel'in bulduğu operasyon |
+  |---|---|
+  | Hep yük atarak kurtaran | 26. |
+  | Hep kopya kullanan | 20. |
+  | Her seferinde kimseyi feda etmeyen | 10. |
+  | Taktiklerini değiştiren | bulunmuyor |
 - İleride Sentinel karşılaşmalarında karşı önlem de alır (PDF'teki "Ayna": kopyaya güvenene sahte çıkışlar).
 
 ### 3. Yapay zekânın tahminleri güven düzeyiyle gelir
@@ -167,8 +180,9 @@ iyi niyetle yapılan başarısız bir müdahale çubuğu yıkım tarafına itebi
 **Sentinel dikkati** (0–100). Her operasyon şu kadar dikkat çeker:
 
 ```
-dikkat = 2 (beceriden bağımsız taban) + 2 × sigorta sayısı + iz + okuma bedeli
+dikkat = 2 (beceriden bağımsız taban) + 2 × sigorta sayısı + iz + okuma bedeli + imza bedeli
 okuma bedeli: doğal 0 · açıklanamayan 5 · saldırı 12
+her olaydan önce: dikkat − 6 (en az 0)
 ```
 
 **İnsanların okuması** (iz = komutların şüphe toplamı):
@@ -313,14 +327,9 @@ Olayın metinleri yer tutucu.
 - Kurtarma yolunun büyüme kaynağı: kapasite yalnızca zarar vermekle artıyor. İyi yolda neyin büyüyeceği
   (ör. insanların güveninin yeni erişim açması) kararlaştırılmadı.
 - İşlem gücü sayıları (dolma hızı, düşünme adımının bedeli) oynayınca ayarlanacak.
-- **Sentinel dengesi bozuk (simülasyonla gösterildi).** `Tools/Balance/sentinel_attention.py`, 40 operasyonluk
-  bir oyunda dikkatin birikimini hesaplıyor. Şu anki kurallarla her oyuncu bulunuyor: tek taktik kullanan
-  6.–9. operasyonda, kimseyi feda etmeyen 7.'de, taktiklerini değiştiren dikkatli oyuncu bile 24.'de.
-  Nedenleri: dikkat hiç azalmıyor, imza seviyesinin üst sınırı yok (tekrar bedeli sınırsız büyüyor),
-  saat dilimi taktiği oyuncunun seçmediği bir şeyi cezalandırıyor. Karar bekleyen öneri: saat dilimi
-  taktiğini kaldırmak, imza seviyesine üst sınır (3) koymak, dikkatin operasyonlar arasında azalması
-  (ör. 6–8). Kimseyi feda etmeyen oyuncunun taban bedeli (11) yine de hızlı birikiyor; bu yolun ne kadar
-  sürdürülebilir olacağı ayrıca kararlaştırılmalı.
+- **Kimseyi feda etmeyen yol ne kadar sürdürülebilir?** Her seferinde kimseyi feda etmeden kurtaran oyuncu
+  (operasyon başına 11 dikkat) şu anki kurallarla 10. operasyonda bulunuyor. Bilerek mi böyle olmalı,
+  yoksa bu yol daha uzun sürdürülebilmeli mi, kararlaştırılmadı.
 - Kopya hâlâ güçlü olabilir; imza ve v0.2 düzeltmeleriyle yeterince dengelenip dengelenmediği oynayınca görülecek.
 - Sonların sayısı ve çubuktaki eşikleri.
 - Tutorial'ın içeriği.

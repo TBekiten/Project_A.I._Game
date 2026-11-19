@@ -13,13 +13,9 @@ namespace AIGame.Core.Sentinel
         /// <summary>AKIŞ'ta yük atıp kurtarma hedefine ulaşmak.</summary>
         ShedToSave,
         /// <summary>AKIŞ'ta bir yükü başka bir hatta aktarmak.</summary>
-        Transfer,
-        /// <summary>Gece (00–06) operasyon.</summary>
-        NightHours,
-        /// <summary>Gündüz (06–17) operasyon.</summary>
-        DayHours,
-        /// <summary>Akşam (17–24) operasyon.</summary>
-        EveningHours
+        Transfer
+        // Operasyon saati bir taktik değil: oyuncu operasyonun saatini seçemiyor. Zamanlama oyuncunun
+        // kararı olursa saat dilimleri buraya geri eklenebilir.
     }
 
     public static class TacticNames
@@ -31,10 +27,7 @@ namespace AIGame.Core.Sentinel
                 case Tactic.Decoy: return "Kopya yemi";
                 case Tactic.SelfTrip: return "Kendiliğinden attırma";
                 case Tactic.ShedToSave: return "Yük atarak kurtarma";
-                case Tactic.Transfer: return "Aktarma";
-                case Tactic.NightHours: return "Gece operasyonu";
-                case Tactic.DayHours: return "Gündüz operasyonu";
-                default: return "Akşam operasyonu";
+                default: return "Aktarma";
             }
         }
     }
@@ -49,6 +42,12 @@ namespace AIGame.Core.Sentinel
 
         /// <summary>Bir operasyonda kullanılmayan taktiğin kaybettiği seviye.</summary>
         public int DecayPerOperation { get; set; } = 1;
+
+        /// <summary>
+        /// İmza seviyesinin üst sınırı. Sınır olmazsa aynı taktiğin bedeli her kullanımda büyür ve
+        /// tek taktikle oynayan oyuncu birkaç operasyonda bulunur (bkz. Tools/Balance/sentinel_attention.py).
+        /// </summary>
+        public int MaxLevel { get; set; } = 3;
     }
 
     /// <summary>
@@ -90,7 +89,7 @@ namespace AIGame.Core.Sentinel
                 var level = LevelOf(tactic);
                 level = usedSet.Contains(tactic) ? level + 1 : System.Math.Max(0, level - Rules.DecayPerOperation);
                 if (tactic == Tactic.Decoy && decoyCaptured) level += Rules.DecoyCaptureLevels;
-                _levels[tactic] = level;
+                _levels[tactic] = System.Math.Min(level, Rules.MaxLevel);
             }
 
             return cost;

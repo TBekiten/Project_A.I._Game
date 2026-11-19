@@ -38,6 +38,14 @@ namespace AIGame.Core.Simulation
         /// <summary>Sentinel'in oyuncu hakkında öğrendikleri.</summary>
         public SentinelProfile Sentinel { get; } = new SentinelProfile();
 
+        /// <summary>
+        /// Her olayın sonunda (görmezden gelmek dahil), yeni dikkat eklenmeden önce dikkat bu kadar azalır:
+        /// Sentinel uzun süre iz görmezse ilgisi söner. Değer simülasyonla seçildi
+        /// (Tools/Balance/sentinel_attention.py): taktiklerini değiştiren oyuncu bulunmaz, tek taktikle
+        /// oynayan oyunun ikinci yarısında bulunur.
+        /// </summary>
+        public int AttentionDecayPerEvent { get; set; } = 6;
+
         public bool FoundBySentinel => Attention >= AttentionMax;
 
         /// <summary>Çubuğun -1..1 aralığındaki konumu.</summary>
@@ -57,6 +65,8 @@ namespace AIGame.Core.Simulation
         public void Apply(OperationResult result)
         {
             if (result == null) throw new ArgumentNullException(nameof(result));
+            result.AttentionDecay = Math.Min(Attention, AttentionDecayPerEvent);
+            Attention -= result.AttentionDecay;
             if (result.Intent != Intent.Ignore)
             {
                 result.SignatureAttention = Sentinel.Assess(result.Tactics, result.DecoyCaptured);

@@ -417,7 +417,7 @@ namespace AIGame.Game.UI
                                                     + "   " + o.Text).ToList();
             var linesHeight = lines.Sum(l => _body.CalcHeight(new GUIContent(l), w) + 4f);
             var summaryHeight = _body.CalcHeight(new GUIContent(result.ReadingSummary), w);
-            var height = 22f + 40f + 30f + 30f + linesHeight + 26f + 30f + summaryHeight + 30f + 60f + 30f + 24f + 70f;
+            var height = 22f + 40f + 30f + 30f + linesHeight + 26f + 30f + summaryHeight + 30f + 60f + 30f + 24f + 24f + 70f;
             var rect = new Rect(x0, Mathf.Max(84f, (_height - height) / 2f - 40f), width, height);
             Panel(rect, ReadingColor(result.Reading));
 
@@ -462,7 +462,10 @@ namespace AIGame.Game.UI
                     ? "Sentinel bu taktikleri tanıyor: +" + result.SignatureAttention + " dikkat (" + tactics + ")"
                     : "Sentinel'in gördüğü taktikler: " + tactics;
                 GUI.Label(new Rect(x, y, w, 24f), Tint(signature, result.SignatureAttention > 0 ? Danger : Muted), _tiny);
+                y += 24f;
             }
+            if (result.AttentionDecay > 0)
+                GUI.Label(new Rect(x, y, w, 24f), Tint("Sessiz geçen süre boyunca Sentinel'in dikkati " + result.AttentionDecay + " azaldı.", Muted), _tiny);
 
             var button = new Rect(rect.xMax - 230f, rect.yMax - 66f, 200f, 46f);
             if (GUI.Button(button, "DEVAM", _button)) Game.ContinueAfterResult();

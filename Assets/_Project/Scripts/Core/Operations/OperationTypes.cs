@@ -71,6 +71,9 @@ namespace AIGame.Core.Operations
         /// <summary>Tekrarlanan taktiklerin ek dikkat bedeli. WorldState.Apply doldurur ve dikkate ekler.</summary>
         public int SignatureAttention { get; set; }
 
+        /// <summary>Bu olaydan önce, sessiz geçen süre boyunca dikkatten düşen miktar. WorldState.Apply doldurur.</summary>
+        public int AttentionDecay { get; set; }
+
         public List<OutcomeLine> Outcomes { get; } = new List<OutcomeLine>();
         public List<NewsItem> News { get; } = new List<NewsItem>();
         public List<string> VoiceLines { get; } = new List<string>();

@@ -162,7 +162,6 @@ namespace AIGame.Tests
                 GridCommand.Shed(Ids.StreetLamps), GridCommand.Shed(Ids.Pump),
                 GridCommand.Close(Ids.Transfer), GridCommand.Restore(Ids.StreetLamps));
             CollectionAssert.Contains(result.Tactics, Tactic.SelfTrip);
-            CollectionAssert.Contains(result.Tactics, Tactic.EveningHours);
             CollectionAssert.DoesNotContain(result.Tactics, Tactic.ShedToSave);
         }
 
@@ -192,6 +191,17 @@ namespace AIGame.Tests
             Assert.AreEqual(0, profile.Assess(new[] { Tactic.Decoy }, false));
             Assert.AreEqual(2, profile.Assess(new[] { Tactic.Decoy }, false));
             Assert.AreEqual(4, profile.Assess(new[] { Tactic.Decoy }, false));
+        }
+
+        [Test]
+        public void SignatureLevel_IsCapped()
+        {
+            var profile = new SentinelProfile();
+            for (var i = 0; i < 10; i++) profile.Assess(new[] { Tactic.Decoy }, false);
+            Assert.AreEqual(3, profile.LevelOf(Tactic.Decoy));
+            Assert.AreEqual(6, profile.Assess(new[] { Tactic.Decoy }, false));
+            profile.Assess(new[] { Tactic.Decoy }, true);
+            Assert.AreEqual(3, profile.LevelOf(Tactic.Decoy));
         }
 
         [Test]
@@ -229,9 +239,25 @@ namespace AIGame.Tests
             var second = RunEnergy(Intent.Save, GridCommand.Shed(Ids.Housing), GridCommand.Close(Ids.Transfer));
             var before = second.AttentionDelta;
             world.Apply(second);
-            // Akşam operasyonu ve yük atarak kurtarma ikinci kez: 2 × 1 + 2 × 1.
-            Assert.AreEqual(4, second.SignatureAttention);
-            Assert.AreEqual(before + 4, second.AttentionDelta);
+            // Yük atarak kurtarma ikinci kez: 2 × 1.
+            Assert.AreEqual(2, second.SignatureAttention);
+            Assert.AreEqual(before + 2, second.AttentionDelta);
+        }
+
+        [Test]
+        public void Attention_FallsBeforeEachEvent_NeverBelowZero()
+        {
+            var world = new WorldState(GameClock.At(19, 0), 40);
+            var first = RunEnergy(Intent.Save, GridCommand.Shed(Ids.Housing), GridCommand.Close(Ids.Transfer));
+            world.Apply(first);
+            Assert.AreEqual(0, first.AttentionDecay);
+            Assert.AreEqual(3, world.Attention);
+
+            var scenario = EastDistrictScenario.Create();
+            var ignore = EnergyOutcomeEvaluator.EvaluateIgnore(scenario.BuildGrid(), scenario, GameClock.At(19, 0));
+            world.Apply(ignore);
+            Assert.AreEqual(3, ignore.AttentionDecay);
+            Assert.AreEqual(0, world.Attention);
         }
     }
 
